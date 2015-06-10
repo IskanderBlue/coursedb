@@ -7,3 +7,6 @@
 * Run R CMD check to check the package tarball.
 
 Read "Writing R Extensions" for more information.
+ 
+
+Making trivial change. 
