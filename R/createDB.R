@@ -1,3 +1,21 @@
+# Roxygen help file commentary
+
+#' Create initial database.
+#' 
+#' Create initial database; only run once.  
+#' Afterwards, use other functions to update the database.
+#' 
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
+#' 
+#' @examples
+#' createDB()
+#' createDB(DBconn())
+#' createDB(connectionToDatabaseName) 
+#' 
+#' @return createDB does not return a value.
+
+
+
 createDB <- function(conn = DBconn()) {
   students <- read.csv(system.file("csv/students.csv", package="coursedb"))
   dbWriteTable(conn, "students", students, row.names = FALSE)

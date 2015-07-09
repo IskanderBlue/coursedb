@@ -1,3 +1,4 @@
+
 DBconn <- local({
   conn <- NULL
   function(dbfile = "course.db") {
