@@ -82,7 +82,7 @@ readAllInfo <- function(conn = DBconn()) {
 #' 
 #' @return A dataframe containing the IDs, given names, and last names of all matches.
 
-NameToID <- function(givenNames = "deedoublename", lastName = "cee") {
+NameToID <- function(givenNames, lastName) {
       IDs <- dbGetQuery(conn = DBconn(), 
                         "SELECT ID, lastName, givenNames 
                                FROM students")
@@ -110,7 +110,7 @@ NameToID <- function(givenNames = "deedoublename", lastName = "cee") {
 #' }
 #' @seealso \code{\link{IDToAssignmentMark}}
 
-IDAndExamNumberToGrade <- function(ID = 111111111, examNumber = "2") {
+IDAndExamNumberToGrade <- function(ID, examNumber) {
       # 1         match ID to answers (mcAnswers) and grades (longformGrades)
       df <- as.data.frame(cbind(ID, examNumber))
       a <- dbGetPreparedQuery(conn = DBconn(),
@@ -168,7 +168,7 @@ IDAndExamNumberToGrade <- function(ID = 111111111, examNumber = "2") {
 #'    \item The student's score as a fraction of the full score.  
 #' }
 #' @seealso \code{\link{IDAndExamNumberToGrade}}
-IDToAssignmentMark <- function(ID = 111111111, assignmentNumber = "1") {
+IDToAssignmentMark <- function(ID, assignmentNumber) {
       # 1   Match ID and assignmentNumber to score (from assignments table)
       #     and get full score for assignment
       df <- as.data.frame(cbind(ID, assignmentNumber))
@@ -179,7 +179,6 @@ IDToAssignmentMark <- function(ID = 111111111, assignmentNumber = "1") {
                                     OR a.ID = 999999999
                                     AND a.assignmentNumber = :assignmentNumber",
                               bind.data = df)
-      a
       if (length(unique(a$assignmentNumber)) > 2) {stop("Assignment number not unique.")}
       # 2   Return vector: mark, fraction
       return(c(mark = a[1,1], outOf = a[2,1], fraction = a[1,1]/a[2,1]))
@@ -205,7 +204,7 @@ IDToAssignmentMark <- function(ID = 111111111, assignmentNumber = "1") {
 #'    }
 #' @return A numeric value.  
 #' @seealso \code{\link{IDToClassParticipation}}
-IDToAttendance <- function(ID = 111111111, date = Sys.Date(), attendanceMethod = "toDate") {
+IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate") {
       # Attendance weighting default: % of dates so far attended; otherwise x/y(specified), capped at 1.
       ID <- as.data.frame(ID)
       c <- dbGetPreparedQuery(conn = DBconn(), 
@@ -253,7 +252,7 @@ IDToAttendance <- function(ID = 111111111, date = Sys.Date(), attendanceMethod =
 #' @seealso \code{\link{IDToClassParticipation}}
 #' @seealso \code{\link{IDToQuestionsAnswered}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
-IDToQuestionsAsked <- function(ID = 111111111, date = Sys.Date(), evalMethod = "percent") {
+IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "percent") {
       #     Default evaluation method:
       #     Find the maximum number of questions asked.  
       #     Find the percentage of that maximum that the given ID asked. 
@@ -313,7 +312,7 @@ IDToQuestionsAsked <- function(ID = 111111111, date = Sys.Date(), evalMethod = "
 #' @seealso \code{\link{IDToClassParticipation}}
 #' @seealso \code{\link{IDToQuestionsAsked}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
-IDToQuestionsAnswered <- function(ID = 111111111, date = Sys.Date(), evalMethod = "percent") {
+IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "percent") {
       #     Default evaluation method:
       #     Find the maximum number of questions answered.  
       #     Find the percentage of that maximum that the given ID answered.
@@ -375,7 +374,7 @@ IDToQuestionsAnswered <- function(ID = 111111111, date = Sys.Date(), evalMethod 
 #' @seealso \code{\link{IDToQuestionsAsked}}
 #' @seealso \code{\link{IDToQuestionsAnswered}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
-IDToCombinedQuestions <- function(ID = 111111111, date = Sys.Date(), evalMethod = "percent") {
+IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "percent") {
       #     Default evaluation method:
       #     Find the maximum number of questions asked and answered.  
       #     Find the percentage of that maximum that the given ID asked and answered.
@@ -441,7 +440,7 @@ IDToCombinedQuestions <- function(ID = 111111111, date = Sys.Date(), evalMethod 
 #' @seealso \code{\link{IDToQuestionsAsked}}
 #' @seealso \code{\link{IDToQuestionsAnswered}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
-IDToClassParticipation <- function(ID = 111111111, date = Sys.Date(), cpWeighting = c(0.5,0.5), attendanceMethod = "toDate", questionMethod = c("answer", "percent")) {
+IDToClassParticipation <- function(ID, date = Sys.Date(), cpWeighting = c(0.5,0.5), attendanceMethod = "toDate", questionMethod = c("answer", "percent")) {
       # Weighting default: .5 attendance, .5 questions
       if (is.numeric(cpWeighting) != TRUE) {
             warning("IDToClassParticipation requires 'cpWeighting' to be a vector of two numbers; defaulting to c(0.5, 0.5).")
@@ -478,7 +477,7 @@ IDToClassParticipation <- function(ID = 111111111, date = Sys.Date(), cpWeightin
 #' }
 #' @seealso \code{\link{IDToAssignmentMark}}
 #' @seealso \code{\link{TestMarks}}
-AssignmentMarks <- function(ID = 111111111, date = Sys.Date()) {
+AssignmentMarks <- function(ID, date = Sys.Date()) {
       a <- readAssignments()
       uniqueA <- unique(a$assignmentNumber[a$date <= date])
       aMarks <- matrix(ncol = 3, nrow = length(uniqueA))
@@ -506,7 +505,7 @@ AssignmentMarks <- function(ID = 111111111, date = Sys.Date()) {
 #' }
 #' @seealso \code{\link{IDAndExamNumberToGrade}}
 #' @seealso \code{\link{AssignmentMarks}}
-TestMarks <- function(ID = 111111111, date = Sys.Date()) {
+TestMarks <- function(ID, date = Sys.Date()) {
       allMC <- readMCAnswers()
       allLF <- readLongformGrades()
       uniqueT <- unique(c(unique(allMC$examNumber[allMC$date <= date])), unique(allLF$examNumber[allLF$date <= date]))
@@ -561,7 +560,7 @@ TestMarks <- function(ID = 111111111, date = Sys.Date()) {
 #' @seealso \code{\link{AssignmentMarks}}
 #' @seealso \code{\link{TestMarks}}
 
-IDToCurrentGrade <- function(ID = 111111111, totalWeighting = c(0.2, 0, 0.3, 0.5), date = Sys.Date(), cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "percent")) {
+IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "percent")) {
       # 1   Determine weighting (eg. assignments = .2, exams = .5)
       #                              Default:   20% Assignments
       #                                          0% Participation
@@ -597,7 +596,7 @@ IDToCurrentGrade <- function(ID = 111111111, totalWeighting = c(0.2, 0, 0.3, 0.5
 #' @seealso \code{\link{readStudents}}
 
 # What are my notes on this student?
-IDToNotes <- function(ID = 111111111) {
+IDToNotes <- function(ID) {
       df <- as.data.frame(ID)     
       dbGetPreparedQuery(conn = DBconn(), 
                          "SELECT notes FROM students AS s WHERE s.ID = :ID", 
