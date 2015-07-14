@@ -11,13 +11,13 @@
 #' 
 #' @family data entry functions
 #' 
-#' @param ID A student's ID number (should be a 9 digit integer).
+#' @param ID A student's ID number (should be a 9 digit integer).  Note that 999999999 is used as the ID for correct responses.  
 #' @param email A string, an email address.
 #' @param lastName A string, the student's last name.
 #' @param givenNames A string, that student's first name (and any middle names used).  
 #' @param program A string, a program name.  Only use a few standardized names.  You don't want "econ", "Econ", "economics", etc.
 #' @param notes A string, any notes you wish to include.  
-NewStudentEntry <- function(ID, email, lastName, givenNames, program, notes) {
+NewStudentEntry <- function(ID, email = "", lastName, givenNames, program = "", notes = "") {
       df <- data.frame(ID = ID, email = email, lastName = lastName, givenNames = givenNames, program = program, notes = notes)
       sql <- "INSERT INTO students VALUES (:ID, :email, :lastName, :givenNames, :program, :notes)" 
       dbGetPreparedQuery(conn, sql, bind.data = df)
@@ -34,10 +34,10 @@ NewStudentEntry <- function(ID, email, lastName, givenNames, program, notes) {
 #' 
 #' @family data entry functions
 #' 
-#' @param ID A student's ID number (should be a 9 digit integer).
+#' @param ID A student's ID number (should be a 9 digit integer).  Note that 999999999, the default, is used as the ID for correct responses.  
 #' @param assignmentNumber A string, the number (or name) of an assignment.
 #' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
-#' @param grade A numeric value, the grade the student achieved on the assignment.
+#' @param grade A numeric value, the grade the student achieved on the assignment.  Note that a set of perfect grades should be entered with the ID: 999999999.  
 NewAssignmentEntry <- function(ID = 999999999, assignmentNumber, date = Sys.Date(), grade) {
       df <- data.frame(ID = ID, assignmentNumber = assignmentNumber, date = date, grade = grade)
       sql <- "INSERT INTO assignments VALUES (:ID, :assignmentNumber, :date, :grade)" 
@@ -53,14 +53,14 @@ NewAssignmentEntry <- function(ID = 999999999, assignmentNumber, date = Sys.Date
 #' 
 #' @family data entry functions
 #' 
-#' @param ID A student's ID number (should be a 9 digit integer).
-#' @param answer An integer, the multiple choice answer given by the student.
+#' @param ID A student's ID number (should be a 9 digit integer).  Note that 999999999, the default, is used as the ID for correct responses.  
+#' @param answer An integer, the multiple choice answer given by the student.  Note that a set of correct answers should be entered with the ID: 999999999.
 #' @param questionNumber The number of the question on the test.
 #' @param questionValue A numeric value, the marks that question is worth.
 #' @param examNumber A string, the number (or name) assigned to an exam.
 #' @param examCode A string, typically a 3-digit integer, but exam versions 
 #'    can be distinguished from each other using names.  
-NewMCEntry <- function(ID = 999999999, answer, questionNumber, questionValue = 2, examNumber, examCode, date = Sys.Date()) {
+NewMCEntry <- function(ID = 999999999, answer, questionNumber, questionValue = 1, examNumber, examCode, date = Sys.Date()) {
       df <- data.frame(ID = as.integer(ID), answer = as.integer(answer), questionNumber = as.integer(questionNumber), questionValue = questionValue, examNumber = examNumber, date = date, examCode = examCode)
       sql <- "INSERT INTO mcAnswers VALUES (:ID, :answer, :questionNumber, :questionValue, :examNumber, :date, :examCode)"
       dbGetPreparedQuery(conn, sql, bind.data = df)      
@@ -77,8 +77,8 @@ NewMCEntry <- function(ID = 999999999, answer, questionNumber, questionValue = 2
 #' Enter a new row into the "longFormGrades" table.
 #' 
 #' @family data entry functions
-#' @param ID A student's ID number (should be a 9 digit integer).
-#' @param grade A numeric value, the grade on a question achieved by the student.
+#' @param ID A student's ID number (should be a 9 digit integer).  Note that 999999999, the default, is used as the ID for correct responses.  
+#' @param grade A numeric value, the grade the student achieved on the assignment.  Note that a set of perfect grades should be entered with the ID: 999999999.  
 #' @param questionNumber The number of the question on the test.
 #' @param examNumber A string, the number (or name) assigned to an exam.
 #' @param examCode A string, typically a 3-digit integer, but exam versions 
@@ -109,7 +109,7 @@ NewLFEntry <- function(ID = 999999999, grade, questionNumber, examNumber, examCo
 #' @param questionAsked A string, the question the student asked.  
 #' @param notes A string, any notes you wish to include.
 #'    
-NewCPEntry <- function(ID = 999999999, date = Sys.Date(), attended = TRUE, questionAnswered = "", questionAsked = "", participationNotes = "") {
+NewCPEntry <- function(ID, date = Sys.Date(), attended = TRUE, questionAnswered = "", questionAsked = "", participationNotes = "") {
       df <- data.frame(ID = as.integer(ID), date = date, attended = attended, questionAnswered = questionAnswered, questionAsked = questionAsked, participationNotes = participationNotes)
       sql <- "INSERT INTO classParticipation VALUES (:ID, :date, :attended, :questionAnswered, :questionAsked, :participationNotes)"
       dbGetPreparedQuery(conn, sql, bind.data = df)
