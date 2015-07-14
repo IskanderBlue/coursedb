@@ -581,7 +581,7 @@ IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting 
       
       # 3   Weight grades according to weighting function.
       aw <- sum(a[,1])/sum(a[,2]) * tW[1]
-      cw <- c * tW2]
+      cw <- c * tW[2]
       tw <- sum(t[-nrow(t), 1], na.rm = TRUE) / sum(t[-nrow(t), 2]) * tW[3] # Tests excluding final.
       ew <- t[nrow(t), 1]/ t[nrow(t), 2] * tW[4] # Final test/ exam.
       
