@@ -235,7 +235,7 @@ IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate") {
 #' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
 #' @param evalMethod One of
 #'    \enumerate{
-#'          \item A string, "percent" -- determine the student's grade as a 
+#'          \item A string, "fraction" -- determine the student's grade as a 
 #'                fraction with the number of questions the student has asked 
 #'                as the numerator and the of the maximum number of questions 
 #'                asked by a single student in the table as the denominator.
@@ -252,10 +252,10 @@ IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate") {
 #' @seealso \code{\link{IDToClassParticipation}}
 #' @seealso \code{\link{IDToQuestionsAnswered}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
-IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "percent") {
+IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
       #     Default evaluation method:
       #     Find the maximum number of questions asked.  
-      #     Find the percentage of that maximum that the given ID asked. 
+      #     Find the fraction of that maximum that the given ID asked. 
       #     Alternate: 100% if >= evalMethod (a number) questions were asked.
       ID <- as.data.frame(ID)
       c <- dbGetPreparedQuery(conn = DBconn(), 
@@ -268,7 +268,7 @@ IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "percent") {
             qGrade <- c(questionsAsked = qs, mark = 0, threshold = evalMethod)
             if (qs >= evalMethod) {qGrade[2] <- 1} 
       } else {
-            if (evalMethod != "percent") {warning("Invalid evalMethod; defaulting to 'percent'.")}
+            if (evalMethod != "fraction") {warning("Invalid evalMethod; defaulting to 'fraction'.")}
             allQs <- dbGetQuery(conn = DBconn(),
                                 "SELECT ID, questionAsked 
                                 FROM classParticipation as c
@@ -278,7 +278,7 @@ IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "percent") {
                   currentID <- sum(allQs$questionAsked[allQs$ID == i] != "")
                   if (currentID > potentialQs) {potentialQs <- currentID}
             }
-            qGrade <- c(questionsAsked = qs, percentage = qs/potentialQs)
+            qGrade <- c(questionsAsked = qs, fraction = qs/potentialQs)
       }
       return(qGrade)
 }
@@ -294,7 +294,7 @@ IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "percent") {
 #' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
 #' @param evalMethod One of
 #'    \enumerate{
-#'          \item A string, "percent" -- determine the student's grade as a 
+#'          \item A string, "fraction" -- determine the student's grade as a 
 #'                fraction with the number of questions the student has answered 
 #'                as the numerator and the of the maximum number of questions 
 #'                answered by a single student in the table as the denominator.
@@ -312,10 +312,10 @@ IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "percent") {
 #' @seealso \code{\link{IDToClassParticipation}}
 #' @seealso \code{\link{IDToQuestionsAsked}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
-IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "percent") {
+IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
       #     Default evaluation method:
       #     Find the maximum number of questions answered.  
-      #     Find the percentage of that maximum that the given ID answered.
+      #     Find the fraction of that maximum that the given ID answered.
       #     Alternate: 100% if >= evalMethod (a number) questions were answered.
       ID <- as.data.frame(ID)
       c <- dbGetPreparedQuery(conn = DBconn(), 
@@ -328,7 +328,7 @@ IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "percent")
             qGrade <- c(questionsAnswered = qs, mark = 0, threshold = evalMethod)
             if (qs >= evalMethod) {qGrade[2] <- 1} 
       } else {
-            if (evalMethod != "percent") {warning("Invalid evalMethod; defaulting to 'percent'.")}
+            if (evalMethod != "fraction") {warning("Invalid evalMethod; defaulting to 'fraction'.")}
             allQs <- dbGetQuery(conn = DBconn(),
                                 "SELECT ID, questionAnswered 
                                 FROM classParticipation as c
@@ -338,7 +338,7 @@ IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "percent")
                   currentID <- sum(allQs$questionAnswered[allQs$ID == i] != "")
                   if (currentID > potentialQs) {potentialQs <- currentID}
             }
-            qGrade <- c(questionsAnswered = qs, percentage = qs/potentialQs)
+            qGrade <- c(questionsAnswered = qs, fraction = qs/potentialQs)
       }
       return(qGrade)
 }
@@ -354,7 +354,7 @@ IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "percent")
 #' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
 #' @param evalMethod One of
 #'    \enumerate{
-#'          \item A string, "percent" -- determine the student's grade as a 
+#'          \item A string, "fraction" -- determine the student's grade as a 
 #'                fraction with the number of questions the student has asked 
 #'                and answered as the numerator and the of the maximum number 
 #'                of questions asked and answered by a single student in the 
@@ -374,10 +374,10 @@ IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "percent")
 #' @seealso \code{\link{IDToQuestionsAsked}}
 #' @seealso \code{\link{IDToQuestionsAnswered}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
-IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "percent") {
+IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
       #     Default evaluation method:
       #     Find the maximum number of questions asked and answered.  
-      #     Find the percentage of that maximum that the given ID asked and answered.
+      #     Find the fraction of that maximum that the given ID asked and answered.
       #     Alternate: 100% if >= evalMethod (a number) questions were asked and/ or answered.
       ID <- as.data.frame(ID)
       c <- dbGetPreparedQuery(conn = DBconn(), 
@@ -390,7 +390,7 @@ IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "percent")
             qGrade <- c(questions = qs, mark = 0, threshold = evalMethod)
             if (qs >= evalMethod) {qGrade[2] <- 1} 
       } else {
-            if (evalMethod != "percent") {warning("Invalid evalMethod; defaulting to 'percent'.")}
+            if (evalMethod != "fraction") {warning("Invalid evalMethod; defaulting to 'fraction'.")}
             allQs <- dbGetQuery(conn = DBconn(),
                                 "SELECT ID, questionAnswered, questionAsked
                                 FROM classParticipation as c
@@ -400,7 +400,7 @@ IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "percent")
                   currentID <- sum(allQs$questionAsked[allQs$ID == i] != "") + sum(allQs$questionAnswered[allQs$ID == i] != "")
                   if (currentID > potentialQs) {potentialQs <- currentID}
             }
-            qGrade <- c(questions = qs, percentage = qs/potentialQs)
+            qGrade <- c(questions = qs, fraction = qs/potentialQs)
       }
       return(qGrade)
 }
@@ -430,7 +430,7 @@ IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "percent")
 #'    \item A string -- either "ask", "answer", or "both", depending on 
 #'          which function you want to use to evaluate questions for the 
 #'          class participation grade.  
-#'    \item Either a string, "percent", or a numeric value.  See the Arguments 
+#'    \item Either a string, "fraction", or a numeric value.  See the Arguments 
 #'          in \code{\link{IDToQuestionsAsked}}, for an explanation.  
 #'    }
 #' @return A numeric value, the fraction of a full grade the student receives.  
@@ -439,7 +439,7 @@ IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "percent")
 #' @seealso \code{\link{IDToQuestionsAsked}}
 #' @seealso \code{\link{IDToQuestionsAnswered}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
-IDToClassParticipation <- function(ID, date = Sys.Date(), cpWeighting = c(0.5,0.5), attendanceMethod = "toDate", questionMethod = c("answer", "percent")) {
+IDToClassParticipation <- function(ID, date = Sys.Date(), cpWeighting = c(0.5,0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction")) {
       # Weighting default: .5 attendance, .5 questions
       if (is.numeric(cpWeighting) != TRUE) {
             warning("IDToClassParticipation requires 'cpWeighting' to be a vector of two numbers; defaulting to c(0.5, 0.5).")
@@ -553,7 +553,7 @@ TestMarks <- function(ID, date = Sys.Date()) {
 #'    \item A string -- either "ask", "answer", or "both", depending on 
 #'          which function you want to use to evaluate questions for the 
 #'          class participation grade.  
-#'    \item Either a string, "percent", or a numeric value.  See the Arguments 
+#'    \item Either a string, "fraction", or a numeric value.  See the Arguments 
 #'          in \code{\link{IDToQuestionsAsked}}, for an explanation.  
 #'    }
 #' @return A numeric value, the fraction of a full grade the student receives.  
@@ -561,7 +561,7 @@ TestMarks <- function(ID, date = Sys.Date()) {
 #' @seealso \code{\link{AssignmentMarks}}
 #' @seealso \code{\link{TestMarks}}
 
-IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "percent")) {
+IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction")) {
       # 1   Determine weighting (eg. assignments = .2, exams = .5)
       #                                   eg.   20% Assignments
       #                                          0% Participation
