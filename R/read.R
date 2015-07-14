@@ -423,8 +423,7 @@ IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "percent")
 #' @param cpWeighting A 2-element vector: \enumerate{
 #'    \item The weight to assign to attendance.
 #'    \item the weight to assign to questions.
-#'    } The mark returned will be incorrect if the cpWeighting vector does not 
-#'    sum to 1.  
+#'    }  
 #' @param attendanceMethod Either a string, "toDate", or a numeric value; 
 #'    see \code{\link{IDToAttendance}}.  
 #' @param questionMethod A 2-element vector; \enumerate{
@@ -446,6 +445,9 @@ IDToClassParticipation <- function(ID, date = Sys.Date(), cpWeighting = c(0.5,0.
             warning("IDToClassParticipation requires 'cpWeighting' to be a vector of two numbers; defaulting to c(0.5, 0.5).")
             cpWeighting <- c(0.5, 0.5)
       }
+      # Normalizing cpWeighting
+      cpW <- cpWeighting/sum(cpWeighting)
+
       a <- IDToAttendance(ID, date, attendanceMethod)
       if (questionMethod[1] == "ask") {
             q <- IDToQuestionsAsked(ID, date, questionMethod[2])
@@ -458,7 +460,7 @@ IDToClassParticipation <- function(ID, date = Sys.Date(), cpWeighting = c(0.5,0.
             q <- IDToQuestionsAnswered(ID, date, questionMethod[2])
       }
       
-      return(a * cpWeighting[1] + q[2] * cpWeighting[2])
+      return(a * cpW[1] + q[2] * cpW[2])
 }
 
 
@@ -544,8 +546,7 @@ TestMarks <- function(ID, date = Sys.Date()) {
 #' @param cpWeighting A 2-element vector: \enumerate{
 #'    \item The weight to assign to attendance.
 #'    \item the weight to assign to questions.
-#'    } The mark returned will be incorrect if the cpWeighting vector does not 
-#'    sum to 1.  
+#'    }
 #' @param attendanceMethod Either a string, "toDate", or a numeric value; 
 #'    see \code{\link{IDToAttendance}}.  
 #' @param questionMethod A 2-element vector; \enumerate{
@@ -562,11 +563,11 @@ TestMarks <- function(ID, date = Sys.Date()) {
 
 IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "percent")) {
       # 1   Determine weighting (eg. assignments = .2, exams = .5)
-      #                              Default:   20% Assignments
+      #                                   eg.   20% Assignments
       #                                          0% Participation
       #                                         30% Tests
       #                                         50% Final
-      #           Should default be out of all marks to date = Sys.Date() ? 
+      tW <- totalWeighting/sum(totalWeighting)
       
       # 2   Fetch all the grades -- assignments, tests, participation, etc.
       # 2.1 Fetch assignments
@@ -579,10 +580,10 @@ IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting 
       c <- IDToClassParticipation(ID, date, cpWeighting, attendanceMethod, questionMethod)
       
       # 3   Weight grades according to weighting function.
-      aw <- sum(a[,1])/sum(a[,2]) * totalWeighting[1]
-      cw <- c * totalWeighting[2]
-      tw <- sum(t[-nrow(t), 1], na.rm = TRUE) / sum(t[-nrow(t), 2]) * totalWeighting[3] # Tests excluding final.
-      ew <- t[nrow(t), 1]/ t[nrow(t), 2] * totalWeighting[4] # Final test/ exam.
+      aw <- sum(a[,1])/sum(a[,2]) * tW[1]
+      cw <- c * tW2]
+      tw <- sum(t[-nrow(t), 1], na.rm = TRUE) / sum(t[-nrow(t), 2]) * tW[3] # Tests excluding final.
+      ew <- t[nrow(t), 1]/ t[nrow(t), 2] * tW[4] # Final test/ exam.
       
       return(sum(aw, cw, tw, ew, na.rm = TRUE))
 }
