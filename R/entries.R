@@ -72,7 +72,23 @@ NewMCEntry <- function(ID = 999999999, answer, questionNumber, questionValue = 1
 #            examNumber = 4,
 #            examCode = 101)
 # readMCAnswers()
-
+dfA <- mcMatrix
+dfQV <- data.frame(questionValues = questionValues, 
+                   examNumber = examNumber, 
+                   date = date, 
+                   examCode = examCode)
+rownames(dfQV) <- questionNumbers
+dfQV
+dfA
+dfLarge <- data.frame()
+for (i in 1:length(questionNumbers)) {
+      for (j in 1:length(idVector)) {
+            dfRow <- c(dfA[j,i], questionValues[i])
+            rownames(dfRow) <-
+                  ******* Name rows and columns? of dfLarge?  Tack on always-same info after (eg. exam code)
+            dfLarge <- rbind(dfLarge, dfRow)
+      }
+}
 
 #' Enter a new row into the "longFormGrades" table.
 #' 
