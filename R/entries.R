@@ -72,6 +72,7 @@ NewMCEntry <- function(ID = 999999999, answer, questionNumber, questionValue = 1
 #            examNumber = 4,
 #            examCode = 101)
 # readMCAnswers()
+<<<<<<< HEAD
 idVector <- c(111111111,222222222,333333333,444444444,555555555,999999999)
 questionNumbers <- c("a", "b", "question 3", "q4", 5)
 answerVectors <- rbind(c(1,2,3,4,5),
@@ -83,6 +84,8 @@ answerVectors <- rbind(c(1,2,3,4,5),
 mcMatrix <- answerVectors
 rownames(mcMatrix) <- idVector
 colnames(mcMatrix) <- questionNumbers
+=======
+>>>>>>> 407a0498054ed787fd859e6cc5e3eb60fd14ac6b
 dfA <- mcMatrix
 dfQV <- data.frame(questionValues = questionValues, 
                    examNumber = examNumber, 
