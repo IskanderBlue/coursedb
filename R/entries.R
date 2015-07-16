@@ -49,36 +49,69 @@ NewAssignmentEntry <- function(ID = 999999999, assignmentNumber, date = Sys.Date
 # readAssignments()
 
 
-#' Enter a new row into the "mcAnswers" table.
+#' Update "mcAnswers" table with new (or corrected) data.
 #' 
-# Key parameters identifying a given table line as unique: ID, questionNumber, date. 
-#     If a line with those values does not exist (eg. if ID or date were entered wrong initially), 
-#           NewMCEntry() will assume that a new line should be added to the table.  
-#           See function AmendMCEntry() to fix such occurrances.  
-#     If a line with given values for those parameters already exists, 
-#           NewMCEntry() assumes that the line should be corrected.  
+#' Use one function call per exam.  
+#' Key variables identifying a given table row as unique: ID, questionNumber, date. 
+#'    If a row with those values does not exist (eg. if ID or date were entered wrong initially), 
+#'          UpdateMCAnswers() will assume that a new row should be added to the table.  
+#'          See function AmendMCEntry() to fix such occurrances.  
+#'    If a row with given values for those parameters already exists, 
+#'          UpdateMCAnswers() assumes that the line should be corrected.  
+#' The questionNumber column in the mcAnswers table is derived from the column 
+#'    names of the 'answers' parameter.  If the columns are not named, the 
+#'    column's position (1:ncol(answers)) is used.
 #' @family data entry functions
-#' 
-#' @param ID A student's ID number (should be a 9 digit integer).  Note that 999999999, the default, is used as the ID for correct responses.  
-#' @param answer An integer, the multiple choice answer given by the student.  Note that a set of correct answers should be entered with the ID: 999999999.
-#' @param questionNumber The number of the question on the test.
-#' @param questionValue A numeric value, the marks that question is worth.
+#' @param ID A vector (typically of 9-digit integers), students' ID numbers.  
+#'          Note that 999999999, is used as the ID for correct responses.  
+#' @param examCode A string, typically a 3-digit integer, 
+#'          but it is entered using as.character().  
+#' @param answer A vector or matrix, the multiple choice answers to be entered 
+#'          or updated.  Each row should be the answers of a specific ID, each 
+#'          column the answers to a given question; if the columns are named, 
+#'          colnames(answer) is to name the questions in the questionNumber 
+#'          column in the mcAnswers table.
+#'          Note that a set of correct answers should be entered with the ID: 999999999.
 #' @param examNumber A string, the number (or name) assigned to an exam.
-#' @param examCode A string, typically a 3-digit integer, but exam versions 
-#'    can be distinguished from each other using names.  
-NewMCEntry <- function(ID = 999999999, answer, questionNumber, examNumber, examCode, questionValue = 1, date = Sys.Date()) {
-      df <- data.frame(ID = as.integer(ID), answer = as.integer(answer), questionNumber = as.integer(questionNumber), questionValue = questionValue, examNumber = examNumber, date = date, examCode = examCode)
-      sql <- "SELECT * FROM mcAnswers AS m WHERE m.ID = :ID AND m.questionNumber = :questionNumber AND m.date = :date"
-      query <- dbGetPreparedQuery(conn, sql, bind.data = df)      
-      if (nrow(query) == 0) {
-            sql <- "INSERT INTO mcAnswers VALUES (:ID, :answer, :questionNumber, :questionValue, :examNumber, :date, :examCode)"
-      } else {
-            sql <- "UPDATE mcAnswers 
-                    SET answer = :answer, questionValue = :questionValue, examNumber = :examNumber, examCode = :examCode 
-                    WHERE ID = :ID AND questionNumber = :questionNumber AND date = :date"
+#' @param questionValue A vector of numeric values, the marks that question is worth.
+#' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
+
+UpdateMCAnswers <- function(ID, examCode, answer, examNumber, questionValue = rep(1,ncol(answer)), date = Sys.Date()) {
+      # Generate 'questionNumber' from colnames(answer).
+      questionNumber = colnames(answer)
+      if (is.null(questionNumber)) {
+            questionNumber <- 1:ncol(answer)
+      } 
+      # Old NewMCEntry() function; updates an SQL database row.
+      MCRowUpdater <- function(df) {
+            sql <- "SELECT * FROM mcAnswers AS m WHERE m.ID = :ID AND m.questionNumber = :questionNumber AND m.date = :date"
+            query <- dbGetPreparedQuery(conn, sql, bind.data = df)      
+            if (nrow(query) == 0) {
+                  sql <- "INSERT INTO mcAnswers VALUES (:ID, :answer, :questionNumber, :questionValue, :examNumber, :date, :examCode)"
+            } else {
+                  sql <- "UPDATE mcAnswers 
+                          SET answer = :answer, questionValue = :questionValue, examNumber = :examNumber, examCode = :examCode 
+                          WHERE ID = :ID AND questionNumber = :questionNumber AND date = :date"
+            }
+            dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
+      }      
+      
+      # Loop through answer matrix, calling MCRowUpdater() to update each 
+      # database row appropriately.
+      df <- data.frame(examNumber = as.character(examNumber), date = as.Date(date))
+      for (i in 1:length(ID)) {
+            df$ID <- ID[i]
+            df$examCode <- as.character(examCode[i])
+            for (j in 1:length(questionNumbers)) {
+                  df$answer = as.character(answer[i,j])
+                  df$questionNumber = as.character(questionNumber[j])
+                  df$questionValue = as.numeric(questionValue[j])
+                  MCRowUpdater(df)
+            } 
       }
-      dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
-}      
+      
+}
+
 # NewMCEntry(ID = 111444777,
 #            answer = 1,
 #            questionNumber = 1,
