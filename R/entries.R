@@ -6,13 +6,33 @@
 numDate <- function(x) as.numeric(as.Date(x))
 
 # Problem: entries saved unnecessarily as decimals
-
+# Problem: some functions don't make new lines properly
 ## PROBLEM: terrible way to input data
 
 # Data entry functions.
 # 
 # A series of functions to update the course.db database.  
 # They are not convenient to use; they will definitely be superceded.  
+
+#' A helper function for the all of the Updater-() functions.
+#' 
+#' @param df A data.frame to be used to update the table.
+#' @param sql1 A string, the initial sql statement to find rows matching the criteria for an existing row.
+#' @param ifsql A string, the sql statement to be used if there are no such matching rows 
+#'    (tells Updater-() to add new rows to table).
+#' @param elsesql A string, the sql statement to be used if no rows match; 
+#'    (tells Updater-() to update matching rows).
+
+rowUpdater <- function(df, sql1, ifsql, elsesql) {
+      query <- dbGetPreparedQuery(conn, sql1, bind.data = df)      
+      if (nrow(query) == 0) {
+            sql <- ifsql
+      } else {
+            sql <- elsesql
+      }
+      dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
+}
+
 
 #' Update "students" table with new (or corrected) data.
 #' 
@@ -34,9 +54,9 @@ numDate <- function(x) as.numeric(as.Date(x))
 #'    \item{notes}{Strings, any notes you would like to include.}
 #' }
 
-#    sDF <- data.frame(ID = c(993456888, 222222229, 122222229), 
+#    sDF <- data.frame(ID = c("asd", 222222229, 122222229), 
 #                     email = c(NA, "222semail@address.com", "abcd@email.com"), 
-#                     lastName = c("Abelard", "Semtekovic", "Kovacs"),
+#                     lastName = c("Abelard", "Semekovic", "Kovacs"),
 #                     givenNames = c("Eugene", "Juliana", "Takeshi"),
 #                     program = c("statistics", "financial modelling", ""),
 #                     notes = c("", "", "Terrifying.") )
@@ -51,21 +71,12 @@ UpdateStudents <- function(sDF) {
       notes <- as.character(sDF[ , 6])
       df <- data.frame(ID = ID, email = email, lastName = lastName, givenNames = givenNames, 
                        program = program, notes = notes)
-      # Writing subfunction to actually handle adding/ updating.
-      sRowUpdater <- function(df) {
-            sql <- "SELECT * FROM students AS s WHERE s.ID = :ID"
-            query <- dbGetPreparedQuery(conn, sql, bind.data = df)      
-            if (nrow(query) == 0) {
-                  sql <- "INSERT INTO students VALUES (:ID, :email, :lastName, :givenNames, :program, :notes)"
-            } else {
-                  sql <- "UPDATE students 
-                  SET email = :email, lastName = :lastName, givenNames = :givenNames, program = :program, notes = :notes
-                  WHERE ID = :ID"
-            }
-            dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
-      }
+      sql1 <- "SELECT * FROM students AS s WHERE s.ID = :ID"
+      ifsql <- "INSERT INTO students VALUES (:ID, :email, :lastName, :givenNames, :program, :notes)"
+      elsesql <- "UPDATE students SET email = :email, lastName = :lastName, givenNames = :givenNames, 
+                  program = :program, notes = :notes WHERE ID = :ID"
       # Running subfunction.
-      sRowUpdater(sDF)
+      rowUpdater(sDF, sql1, ifsql, elsesql)
 }
 
 #' Update "assignments" table with new (or corrected) data.
@@ -97,21 +108,12 @@ UpdateAssignments <- function(aDF) {
                        assignmentNumber = assignmentNumber, 
                        date = date, 
                        grade = grade)
-      # Writing subfunction to actually handle adding/ updating.
-      aRowUpdater <- function(df) {
-            sql <- "SELECT * FROM assignments AS a WHERE a.ID = :ID AND a.date = :date"
-            query <- dbGetPreparedQuery(conn, sql, bind.data = df)      
-            if (nrow(query) == 0) {
-                  sql <- "INSERT INTO assignments VALUES (:ID, :assignmentNumber, :date, :grade)"
-            } else {
-                  sql <- "UPDATE assignments 
-                  SET assignmentNumber = :assignmentNumber, grade = :grade 
+      sql1 <- "SELECT * FROM assignments AS a WHERE a.ID = :ID AND a.date = :date"
+      ifsql <- "INSERT INTO assignments VALUES (:ID, :assignmentNumber, :date, :grade)"
+      elsesql <- "UPDATE assignments SET assignmentNumber = :assignmentNumber, grade = :grade 
                   WHERE ID = :ID AND date = :date"
-            }
-            dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
-            }
       # Running subfunction
-      aRowUpdater(aDF)
+      rowUpdater(aDF, sql1, ifsql, elsesql)
 }
 
 
@@ -153,21 +155,12 @@ UpdateMCAnswers <- function(ID, answer, examNumber, examCode, questionNumber = N
       if (is.null(questionNumber)) {
             questionNumber <- 1:ncol(answer)
       } 
-      # Old NewMCEntry() function; updates an SQL database row.
-      MCRowUpdater <- function(df) {
-            sql <- "SELECT * FROM mcAnswers AS m WHERE m.ID = :ID AND m.questionNumber = :questionNumber AND m.date = :date"
-            query <- dbGetPreparedQuery(conn, sql, bind.data = df)      
-            if (nrow(query) == 0) {
-                  sql <- "INSERT INTO mcAnswers VALUES (:ID, :answer, :questionNumber, :questionValue, :examNumber, :date, :examCode)"
-            } else {
-                  sql <- "UPDATE mcAnswers 
+      sql1 <- "SELECT * FROM mcAnswers AS m WHERE m.ID = :ID AND m.questionNumber = :questionNumber AND m.date = :date"
+      ifsql <- "INSERT INTO mcAnswers VALUES (:ID, :answer, :questionNumber, :questionValue, :examNumber, :date, :examCode)"
+      elsesql <- "UPDATE mcAnswers 
                   SET answer = :answer, questionValue = :questionValue, examNumber = :examNumber, examCode = :examCode 
                   WHERE ID = :ID AND questionNumber = :questionNumber AND date = :date"
-            }
-            dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
-      }
-      
-      # Loop through answer matrix, calling MCRowUpdater() to update each 
+      # Loop through answer matrix, calling rowUpdater() to update each 
       # database row appropriately.
       df <- data.frame(examNumber = as.character(examNumber), date = as.Date(date))
       for (i in 1:length(ID)) {
@@ -177,7 +170,7 @@ UpdateMCAnswers <- function(ID, answer, examNumber, examCode, questionNumber = N
                   df$answer = as.character(answer[i, j])
                   df$questionNumber = as.character(questionNumber[j])
                   df$questionValue = as.numeric(questionValue[j])
-                  MCRowUpdater(df)
+                  rowUpdater(df, sql1, ifsql, elsesql)
             } 
       }
 }
@@ -217,22 +210,13 @@ UpdateLFGrades <- function(ID, grade, examNumber, examCode, questionNumber = NUL
       questionNumber = colnames(grade)
       if (is.null(questionNumber)) {
             questionNumber <- 1:ncol(grade)
-      } 
-      # Heart of NewLFEntry() function; updates an SQL database row.
-      # Old NewMCEntry() function; updates an SQL database row.
-      LFRowUpdater <- function(df) {
-            sql <- "SELECT * FROM longformGrades AS l WHERE l.ID = :ID AND l.questionNumber = :questionNumber AND l.date = :date"
-            query <- dbGetPreparedQuery(conn, sql, bind.data = df)      
-            if (nrow(query) == 0) {
-                  sql <- "INSERT INTO longformGrades VALUES (:ID, :grade, :questionNumber, :examNumber, :date, :examCode)"
-            } else {
-                  sql <- "UPDATE longformGrades 
+      }
+      sql1 <- "SELECT * FROM longformGrades AS l WHERE l.ID = :ID AND l.questionNumber = :questionNumber AND l.date = :date"
+      ifsql <- "INSERT INTO longformGrades VALUES (:ID, :grade, :questionNumber, :examNumber, :date, :examCode)"
+      elsesql <- "UPDATE longformGrades 
                   SET grade = :grade, examNumber = :examNumber, examCode = :examCode 
                   WHERE ID = :ID AND questionNumber = :questionNumber AND date = :date"
-            }
-            dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
-      }     
-      # Loop through grade matrix, calling LFRowUpdater() to update each 
+      # Loop through grade matrix, calling rowUpdater() to update each 
       # database row appropriately.
       df <- data.frame(examNumber = as.character(examNumber), date = as.Date(date))
       for (i in 1:length(ID)) {
@@ -241,7 +225,7 @@ UpdateLFGrades <- function(ID, grade, examNumber, examCode, questionNumber = NUL
             for (j in 1:length(questionNumber)) {
                   df$grade = as.numeric(grade[i, j])
                   df$questionNumber = as.character(questionNumber[j])
-                  LFRowUpdater(df)
+                  rowUpdater(df, sql1, ifsql, elsesql)
             } 
       }
 }
@@ -289,18 +273,11 @@ UpdateClassParticipation <- function(cpDataFrame) {
                        participationNotes = as.character(cpDataFrame[ , 5]), 
                        date = numDate(cpDataFrame[ , 6]))
       # Writing subfunction to actually handle adding/ updating.
-      CPRowUpdater <- function(df) {
-            sql <- "SELECT * FROM classParticipation AS c WHERE c.ID = :ID AND c.questionAnswered = :questionAnswered AND c.questionAsked = :questionAsked AND c.participationNotes = :participationNotes AND c.date = :date"
-            query <- dbGetPreparedQuery(conn, sql, bind.data = df)      
-            if (nrow(query) == 0) {
-                  sql <- "INSERT INTO classParticipation VALUES (:ID, :date, :attended, :questionAnswered, :questionAsked, :participationNotes)"
-            } else {
-                  sql <- "UPDATE classParticipation 
+      sql1 <- "SELECT * FROM classParticipation AS c WHERE c.ID = :ID AND c.questionAnswered = :questionAnswered AND c.questionAsked = :questionAsked AND c.participationNotes = :participationNotes AND c.date = :date"
+      ifsql <- "INSERT INTO classParticipation VALUES (:ID, :date, :attended, :questionAnswered, :questionAsked, :participationNotes)"
+      elsesql <- "UPDATE classParticipation 
                   SET attended = :attended
                   WHERE ID = :ID AND questionAnswered = :questionAnswered AND questionAsked = :questionAsked AND participationNotes = :participationNotes AND date = :date"
-            }
-            dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
-      }
       # Running subfunction
-      CPRowUpdater(cpDataFrame)
+      rowUpdater(cpDataFrame, sql1, ifsql, elsesql)
 }
