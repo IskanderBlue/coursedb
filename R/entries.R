@@ -14,28 +14,59 @@ numDate <- function(x) as.numeric(as.Date(x))
 # A series of functions to update the course.db database.  
 # They are not convenient to use; they will definitely be superceded.  
 
-#' Enter a new row into the "students" table.
+#' Update "students" table with new (or corrected) data.
 #' 
+#' One function call can update an arbitrary number of student entries.  
+#' The key variable identifying a given table row as unique is ID.  
+#'    If a row with that ID value does not exist (eg. if ID was entered wrong initially), 
+#'          UpdateMCAnswers() will assume that a new row should be added to the table.  
+#'          See function AmendStudents() to fix such occurrances.  
+#'    If a row with a given value for ID already exists, 
+#'          UpdateStudents() assumes that the row should be corrected.  
 #' @family data entry functions
-#' 
-#' @param ID A student's ID number (should be a 9 digit integer).  Note that 999999999 is used as the ID for correct responses.  
-#' @param email A string, an email address.
-#' @param lastName A string, the student's last name.
-#' @param givenNames A string, that student's first name (and any middle names used).  
-#' @param program A string, a program name.  Only use a few standardized names.  You don't want "econ", "Econ", "economics", etc.
-#' @param notes A string, any notes you wish to include.  
-NewStudentEntry <- function(ID, email = "", lastName, givenNames, program = "", notes = "") {
-      df <- data.frame(ID = ID, email = email, lastName = lastName, givenNames = givenNames, program = program, notes = notes)
-      sql <- "INSERT INTO students VALUES (:ID, :email, :lastName, :givenNames, :program, :notes)" 
-      dbGetPreparedQuery(conn, sql, bind.data = df)
+#' @param sDF A dataframe with six columns.  
+#' \describe{
+#'    \item{ID}{Strings, the students' IDs (typically 9-digit integers). Note that 999999999 is used as the ID for correct responses.}
+#'    \item{email}{Strings, the email addresses.}
+#'    \item{lastName}{Strings, the students' last names.}
+#'    \item{givenNames}{Strings, the students' first (and possibly middle) names.}
+#'    \item{program}{Strings, the program a student is enrolled in.}
+#'    \item{notes}{Strings, any notes you would like to include.}
+#' }
+
+#    sDF <- data.frame(ID = c(993456888, 222222229, 122222229), 
+#                     email = c(NA, "222semail@address.com", "abcd@email.com"), 
+#                     lastName = c("Abelard", "Semtekovic", "Kovacs"),
+#                     givenNames = c("Eugene", "Juliana", "Takeshi"),
+#                     program = c("statistics", "financial modelling", ""),
+#                     notes = c("", "", "Terrifying.") )
+#       UpdateStudents(sDF)
+
+UpdateStudents <- function(sDF) {
+      ID <- as.character(sDF[ , 1])
+      email <- as.character(sDF[ , 2])
+      lastName <- as.character(sDF[ , 3])
+      givenNames <- as.character(sDF[ , 4])
+      program <- as.character(sDF[ , 5])
+      notes <- as.character(sDF[ , 6])
+      df <- data.frame(ID = ID, email = email, lastName = lastName, givenNames = givenNames, 
+                       program = program, notes = notes)
+      # Writing subfunction to actually handle adding/ updating.
+      sRowUpdater <- function(df) {
+            sql <- "SELECT * FROM students AS s WHERE s.ID = :ID"
+            query <- dbGetPreparedQuery(conn, sql, bind.data = df)      
+            if (nrow(query) == 0) {
+                  sql <- "INSERT INTO students VALUES (:ID, :email, :lastName, :givenNames, :program, :notes)"
+            } else {
+                  sql <- "UPDATE students 
+                  SET email = :email, lastName = :lastName, givenNames = :givenNames, program = :program, notes = :notes
+                  WHERE ID = :ID"
+            }
+            dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
+      }
+      # Running subfunction.
+      sRowUpdater(sDF)
 }
-# NewStudentEntry(ID = 111444777, 
-#                 email = "ameining@uwo.ca", 
-#                 lastName = "Meining", 
-#                 givenNames = "Andrew", 
-#                 program = "economics", 
-#                 notes = "")
-# readStudents()
 
 #' Update "assignments" table with new (or corrected) data.
 #' 
