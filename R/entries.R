@@ -64,19 +64,23 @@ NewAssignmentEntry <- function(ID = 999999999, assignmentNumber, date = Sys.Date
 #' @family data entry functions
 #' @param ID A vector (typically of 9-digit integers), students' ID numbers.  
 #'          Note that 999999999, is used as the ID for correct responses.  
-#' @param examCode A string, typically a 3-digit integer, 
-#'          but it is entered using as.character().  
 #' @param answer A vector or matrix, the multiple choice answers to be entered 
 #'          or updated.  Each row should be the answers of a specific ID, each 
 #'          column the answers to a given question; if the columns are named, 
-#'          colnames(answer) is to name the questions in the questionNumber 
+#'          colnames(answer) is used to name the questions in the questionNumber 
 #'          column in the mcAnswers table.
 #'          Note that a set of correct answers should be entered with the ID: 999999999.
 #' @param examNumber A string, the number (or name) assigned to an exam.
+#' @param examCode A string, typically a 3-digit integer, 
+#'          but it is entered using as.character().  
+#' @param questionNumber A vector of strings containing question names.  
+#'          Overwritten by colnames(answer) if that attrib exists.  
+#'          If questionNumber is not given as a parameter or as colnames(answer), 
+#'                it defaults to 1:ncol(answer).  
 #' @param questionValue A vector of numeric values, the marks that question is worth.
 #' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
 
-UpdateMCAnswers <- function(ID, examCode, answer, examNumber, questionValue = rep(1,ncol(answer)), date = Sys.Date()) {
+UpdateMCAnswers <- function(ID, answer, examNumber, examCode, questionNumber = NULL, questionValue = rep(1, ncol(answer)), date = Sys.Date()) {
       # Generate 'questionNumber' from colnames(answer).
       questionNumber = colnames(answer)
       if (is.null(questionNumber)) {
@@ -90,11 +94,11 @@ UpdateMCAnswers <- function(ID, examCode, answer, examNumber, questionValue = re
                   sql <- "INSERT INTO mcAnswers VALUES (:ID, :answer, :questionNumber, :questionValue, :examNumber, :date, :examCode)"
             } else {
                   sql <- "UPDATE mcAnswers 
-                          SET answer = :answer, questionValue = :questionValue, examNumber = :examNumber, examCode = :examCode 
-                          WHERE ID = :ID AND questionNumber = :questionNumber AND date = :date"
+                  SET answer = :answer, questionValue = :questionValue, examNumber = :examNumber, examCode = :examCode 
+                  WHERE ID = :ID AND questionNumber = :questionNumber AND date = :date"
             }
             dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
-      }      
+      }
       
       # Loop through answer matrix, calling MCRowUpdater() to update each 
       # database row appropriately.
@@ -103,44 +107,77 @@ UpdateMCAnswers <- function(ID, examCode, answer, examNumber, questionValue = re
             df$ID <- ID[i]
             df$examCode <- as.character(examCode[i])
             for (j in 1:length(questionNumbers)) {
-                  df$answer = as.character(answer[i,j])
+                  df$answer = as.character(answer[i, j])
                   df$questionNumber = as.character(questionNumber[j])
                   df$questionValue = as.numeric(questionValue[j])
                   MCRowUpdater(df)
             } 
       }
-      
 }
 
-# NewMCEntry(ID = 111444777,
-#            answer = 1,
-#            questionNumber = 1,
-#            questionValue = 2,
-#            examNumber = 4,
-#            examCode = 101)
-# readMCAnswers()
-
-#' Enter a new row into the "longFormGrades" table.
+#' Update "longformGrades" table with new (or corrected) data.
 #' 
+#' Use one function call per exam.  
+#' Key variables identifying a given table row as unique: ID, questionNumber, date. 
+#'    If a row with those values does not exist (eg. if ID or date were entered wrong initially), 
+#'          UpdateLFGrades() will assume that a new row should be added to the table.  
+#'          See function AmendLFEntry() to fix such occurrances.  
+#'    If a row with given values for those parameters already exists, 
+#'          UpdateLFGrades() assumes that the line should be corrected.  
+#' The questionNumber column in the longformGrades table is derived from the column 
+#'    names of the 'grade' parameter.  If the columns are not named, the 
+#'    column's position (1:ncol(grade)) is used.
 #' @family data entry functions
-#' @param ID A student's ID number (should be a 9 digit integer).  Note that 999999999, the default, is used as the ID for correct responses.  
-#' @param grade A numeric value, the grade the student achieved on the assignment.  Note that a set of perfect grades should be entered with the ID: 999999999.  
-#' @param questionNumber The number of the question on the test.
+#' @param ID A vector (typically of 9-digit integers), students' ID numbers.  
+#'          Note that 999999999, is used as the ID for correct responses.  
+#' @param grade A vector or matrix of numeric elements containing the grades to be entered or updated.  
+#'          Each row should be the results for a specific ID, each 
+#'          column the grades for a given question; if the columns are named, 
+#'          colnames(grade) is used to name the questions in the questionNumber 
+#'          column in the longformGrades table.
+#'          Note that a set of maximum grades should be entered with the ID: 999999999.
 #' @param examNumber A string, the number (or name) assigned to an exam.
-#' @param examCode A string, typically a 3-digit integer, but exam versions 
-#'    can be distinguished from each other using names.  
-#'    
-NewLFEntry <- function(ID = 999999999, grade, questionNumber, examNumber, examCode, date = Sys.Date()) {
-      df <- data.frame(ID = as.integer(ID), grade = grade, questionNumber = as.integer(questionNumber), examNumber = examNumber, date = date, examCode = examCode)
-      sql <- "INSERT INTO longformGrades VALUES (:ID, :grade, :questionNumber, :examNumber, :date, :examCode)"
-      dbGetPreparedQuery(conn, sql, bind.data = df)
+#' @param examCode A string, typically a 3-digit integer, 
+#'          but it is entered using as.character().  
+#' @param questionNumber A vector of strings containing question names.  
+#'          Overwritten by colnames(grade) if that attrib exists.  
+#'          If questionNumber is not given as a parameter or as colnames(grade), 
+#'                it defaults to 1:ncol(grade).  
+#' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
+
+UpdateLFGrades <- function(ID, grade, examNumber, examCode, questionNumber = NULL, date = Sys.Date()) {
+      # Generate 'questionNumber' from colnames(grade).
+      questionNumber = colnames(grade)
+      if (is.null(questionNumber)) {
+            questionNumber <- 1:ncol(grade)
+      } 
+      # Heart of NewLFEntry() function; updates an SQL database row.
+      # Old NewMCEntry() function; updates an SQL database row.
+      LFRowUpdater <- function(df) {
+            sql <- "SELECT * FROM longformGrades AS l WHERE l.ID = :ID AND l.questionNumber = :questionNumber AND l.date = :date"
+            query <- dbGetPreparedQuery(conn, sql, bind.data = df)      
+            if (nrow(query) == 0) {
+                  sql <- "INSERT INTO longformGrades VALUES (:ID, :grade, :questionNumber, :examNumber, :date, :examCode)"
+            } else {
+                  sql <- "UPDATE longformGrades 
+                  SET grade = :grade, examNumber = :examNumber, examCode = :examCode 
+                  WHERE ID = :ID AND questionNumber = :questionNumber AND date = :date"
+            }
+            dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
+      }     
+      # Loop through grade matrix, calling LFRowUpdater() to update each 
+      # database row appropriately.
+      df <- data.frame(examNumber = as.character(examNumber), date = as.Date(date))
+      for (i in 1:length(ID)) {
+            df$ID <- ID[i]
+            df$examCode <- as.character(examCode[i])
+            for (j in 1:length(questionNumbers)) {
+                  df$grade = as.numeric(grade[i, j])
+                  df$questionNumber = as.character(questionNumber[j])
+                  LFRowUpdater(df)
+            } 
+      }
 }
-# NewLFEntry(ID = 111444777,
-#            grade = 10,
-#            questionNumber = 1,
-#            examNumber = 4,
-#            examCode = 101)
-# readLongformGrades()
 
 
 
