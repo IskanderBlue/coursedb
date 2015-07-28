@@ -1,3 +1,8 @@
+#' Create a connecdtion to SQL database "course.db".  
+#' 
+#' Opens up and returns a connection to the file "course.db", an SQL database.
+#' Used by \code{\link{createDB}}.  
+#' @param dbfile The name of the file you'd like to use as your database.
 
 DBconn <- local({
   conn <- NULL
@@ -14,5 +19,3 @@ DBconn <- local({
     conn
   }
 })
-
-

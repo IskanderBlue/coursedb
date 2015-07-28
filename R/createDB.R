@@ -9,8 +9,6 @@
 #' 
 #' @examples
 #' createDB()
-#' createDB(DBconn())
-#' createDB(connectionToDatabaseName) 
 #' 
 #' @return createDB does not return a value.
 

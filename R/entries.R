@@ -59,7 +59,7 @@ NewStudentEntry <- function(ID, email = "", lastName, givenNames, program = "", 
 
 UpdateAssignments <- function(aDF) {
       ID <- as.character(aDF[ , 1])
-      assignmentNumber <- as.character(adF[ , 2])
+      assignmentNumber <- as.character(aDF[ , 2])
       grade <- as.numeric(aDF[ , 3])
       date <- numDate(aDF[ , 4])
       df <- data.frame(ID = ID, 
@@ -81,7 +81,7 @@ UpdateAssignments <- function(aDF) {
             }
       # Running subfunction
       aRowUpdater(aDF)
-      }
+}
 
 
 
@@ -142,7 +142,7 @@ UpdateMCAnswers <- function(ID, answer, examNumber, examCode, questionNumber = N
       for (i in 1:length(ID)) {
             df$ID <- ID[i]
             df$examCode <- as.character(examCode[i])
-            for (j in 1:length(questionNumbers)) {
+            for (j in 1:length(questionNumber)) {
                   df$answer = as.character(answer[i, j])
                   df$questionNumber = as.character(questionNumber[j])
                   df$questionValue = as.numeric(questionValue[j])
@@ -207,7 +207,7 @@ UpdateLFGrades <- function(ID, grade, examNumber, examCode, questionNumber = NUL
       for (i in 1:length(ID)) {
             df$ID <- ID[i]
             df$examCode <- as.character(examCode[i])
-            for (j in 1:length(questionNumbers)) {
+            for (j in 1:length(questionNumber)) {
                   df$grade = as.numeric(grade[i, j])
                   df$questionNumber = as.character(questionNumber[j])
                   LFRowUpdater(df)

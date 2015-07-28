@@ -74,7 +74,7 @@ readAllInfo <- function(conn = DBconn()) {
 #' 
 #' Enter a student's name -- given names in the first string, last name in the second.  
 #' NameToID() will return a dataframe with the IDs and names of all students 
-#' with names similar (according to \link{agrep()}) to the strings the user 
+#' with names similar (according to \code{\link{agrep}}) to the strings the user 
 #' gives.  
 #' 
 #' @param givenNames A string, a student's first name (and any middle names used).  
