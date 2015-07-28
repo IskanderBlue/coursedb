@@ -1,0 +1,57 @@
+---
+title: "toDo"
+author: "Robert Lee"
+date: "July 28, 2015"
+output: pdf_document
+---
+Data frame vs. matrix + vectors
+Document what is needed.
+      Give default plus way to override.  
+      Those who will use will only use if few changes are necessary to get what they already do to 
+      Make so that beginners can use, experts can customize.
+            Don't make beginner enter unnecessary things.  Don't make experts do things your way.
+      
+Store notes as part of package.      
+
+Plan:
+      Carry out operations with real data from old term.  If all works, great; otherwise, need changes.
+      Then write up description of how to do.
+      Then merge with Sweavetest package. 
+      Might be easier to make this a package used by Sweavetest.
+            Transition to database at leisure.
+
+Generally, make lots of commits; when you get something working, commit.
+Try not to have package on GitHub not working.
+      Sometimes, better to commit before working in case you would lose much work.
+      Try to have build, tests before committing.
+            Put a whole bunch of these in tests directory.
+      
+Automated testing
+Version with R
+      Directory in package called tests
+            If Any scripts in there generate error, fail.
+            Anything can go in those files.
+            Eg. run through example with known answer; stop if not expected answer.
+      Requires thinking what should go into tests.
+Several frameworks/ packages for unit tests.
+      Some love them.
+      Make it easier to handle checks?
+      Eg. Do this and you should generate and error/ warning, / answer should be x.
+            Must not generate error if you make the right kind of error, etc.
+      Eg. **testthat, testPackage (Murdoch only)
+      library(testthat)
+Check with Hadley on testthat use.
+Roxygen has some support for testthat?
+It might automatically run the tests.
+      
+
+Test-based design.
+Must understand user view from the beinning.
+Tests important.  Tets first?  Less certain.
+      Always have examples.  Make sure they produce right answer.*******
+Tests that are good for testing are not necessarily good for examples.  ***
+      Throw testthat in to examples at the end.
+      
+Go through check output, fix what can be fixed.
+        
+      
