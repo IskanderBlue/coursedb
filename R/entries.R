@@ -1,3 +1,10 @@
+#' Ensure that correctly formatted dates are stored as numeric values.
+#' 
+#' @family helper functions
+#' @param x A date -- converted into a date class object, then converted into a numeric value.  
+
+numDate <- function(x) as.numeric(as.Date(x))
+
 # Problem: entries saved unnecessarily as decimals
 
 ## PROBLEM: terrible way to input data
@@ -182,21 +189,58 @@ UpdateLFGrades <- function(ID, grade, examNumber, examCode, questionNumber = NUL
 
 
 
-#' Enter a new row into the "classParticipation" table.
+
+#' Update "classParticipation" table with new (or corrected) data.
 #' 
+#' If ID, questionAnswered, questionAsked, participationNotes, and date are all the same, 
+#' a given row is assumed to be a duplicate and the attended value of the existing row in 
+#' the table is updated rather than a new row created.  
 #' @family data entry functions
-#' @param ID A student's ID number (should be a 9 digit integer).
-#' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
-#' @param attended A boolean value, whether the student attended on that date.
-#' @param questionAnswered A string, the question the student answered.  
-#' @param questionAsked A string, the question the student asked.  
-#' @param notes A string, any notes you wish to include.
-#'    
-NewCPEntry <- function(ID, date = Sys.Date(), attended = TRUE, questionAnswered = "", questionAsked = "", participationNotes = "") {
-      df <- data.frame(ID = as.integer(ID), date = date, attended = attended, questionAnswered = questionAnswered, questionAsked = questionAsked, participationNotes = participationNotes)
-      sql <- "INSERT INTO classParticipation VALUES (:ID, :date, :attended, :questionAnswered, :questionAsked, :participationNotes)"
-      dbGetPreparedQuery(conn, sql, bind.data = df)
+#' @param cpDataFrame A dataframe with six columns.  
+#' \describe{
+#'    \item{ID}{The students' IDs, typically 9-digit integers, but entered as strings.}
+#'    \item{attended}{Boolean/ logical values, whether students attended on that date.}
+#'    \item{questionAnswered}{Strings, defaulting to ""; the questions the student answered.}
+#'    \item{questionAsked}{Strings, defaulting to ""; the questions the student asked.}
+#'    \item{participationNotes}{Strings, any notes you wish to include.}
+#'    \item{date}{\code{\link{date}} class objects.}
+#' }
+#' @seealso \code{\link{date}}
+#   cpDF <- data.frame(ID = c(993456888, 222222229, 222222229), 
+#                    attended = c(F, T, T), 
+#                    questionAnswered = c("", "You're tired.", ""),
+#                    questionAsked = c("", "", "Why are you so tired?"),
+#                    participationNotes = c("", "", "He said sleepily."),
+#                    date = rep(Sys.Date(), 3) )
+#           UpdateClassParticipation(cpDF)
+
+UpdateClassParticipation <- function(cpDataFrame) {
+      # Making sure columns are in the right format.
+      ID <- as.character(cpDataFrame[ , 1])
+      attended <- as.logical(cpDataFrame[ , 2])
+      questionAnswered <- as.character(cpDataFrame[ , 3])
+      questionAsked <- as.character(cpDataFrame[ , 4])
+      participationNotes <- as.character(cpDataFrame[ , 5])
+      date <- numDate(cpDataFrame[ , 6])
+      df <- data.frame(ID = as.character(cpDataFrame[ , 1]), 
+                       attended = as.logical(cpDataFrame[ , 2]), 
+                       questionAnswered = as.character(cpDataFrame[ , 3]), 
+                       questionAsked = as.character(cpDataFrame[ , 4]), 
+                       participationNotes = as.character(cpDataFrame[ , 5]), 
+                       date = numDate(cpDataFrame[ , 6]))
+      # Writing subfunction to actually handle adding/ updating.
+      CPRowUpdater <- function(df) {
+            sql <- "SELECT * FROM classParticipation AS c WHERE c.ID = :ID AND c.questionAnswered = :questionAnswered AND c.questionAsked = :questionAsked AND c.participationNotes = :participationNotes AND c.date = :date"
+            query <- dbGetPreparedQuery(conn, sql, bind.data = df)      
+            if (nrow(query) == 0) {
+                  sql <- "INSERT INTO classParticipation VALUES (:ID, :date, :attended, :questionAnswered, :questionAsked, :participationNotes)"
+            } else {
+                  sql <- "UPDATE classParticipation 
+                  SET attended = :attended
+                  WHERE ID = :ID AND questionAnswered = :questionAnswered AND questionAsked = :questionAsked AND participationNotes = :participationNotes AND date = :date"
+            }
+            dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
+      }
+      # Running subfunction
+      CPRowUpdater(cpDataFrame)
 }
-# NewCPEntry(ID = 111444777,
-#            attended = FALSE)
-# readClassParticipation()
