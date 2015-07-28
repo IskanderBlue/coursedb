@@ -37,23 +37,52 @@ NewStudentEntry <- function(ID, email = "", lastName, givenNames, program = "", 
 #                 notes = "")
 # readStudents()
 
-#' Enter a new row into the "assignments" table.
+#' Update "assignments" table with new (or corrected) data.
 #' 
+#' If in a given row of the data.frame parameter (aDF) ID and date are the same as a row in the assignments table, 
+#' that row is assumed to be a duplicate and the assignmentNumber and grade values of the existing row in 
+#' the table are updated rather than a new row created.  
 #' @family data entry functions
-#' 
-#' @param ID A student's ID number (should be a 9 digit integer).  Note that 999999999, the default, is used as the ID for correct responses.  
-#' @param assignmentNumber A string, the number (or name) of an assignment.
-#' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
-#' @param grade A numeric value, the grade the student achieved on the assignment.  Note that a set of perfect grades should be entered with the ID: 999999999.  
-NewAssignmentEntry <- function(ID = 999999999, assignmentNumber, date = Sys.Date(), grade) {
-      df <- data.frame(ID = ID, assignmentNumber = assignmentNumber, date = date, grade = grade)
-      sql <- "INSERT INTO assignments VALUES (:ID, :assignmentNumber, :date, :grade)" 
-      dbGetPreparedQuery(conn, sql, bind.data = df)      
-}
-# NewAssignmentEntry(ID = 111444777,
-#                    assignmentNumber = 4,
-#                    grade = 10)
-# readAssignments()
+#' @param aDF A dataframe with four columns.  
+#' \describe{
+#'    \item{ID}{Strings, the students' IDs (typically 9-digit integers).}
+#'    \item{assignmentNumber}{Strings, the names or numbers of the assignments.}
+#'    \item{grade}{Numeric values, the grades recieved on assignments.}
+#'    \item{date}{\code{\link{date}} class objects.}
+#' }
+#' @seealso \code{\link{date}}
+#   aDF <- data.frame(ID = c(993456888, 222222229, 222222229), 
+#                    assignmentNumber = c("1", "1", "three"), 
+#                    grade = c(4, 5.5, 10)
+#                    date = rep(Sys.Date(), 3) )
+#           UpdateAssignments(aDF)
+
+UpdateAssignments <- function(aDF) {
+      ID <- as.character(aDF[ , 1])
+      assignmentNumber <- as.character(adF[ , 2])
+      grade <- as.numeric(aDF[ , 3])
+      date <- numDate(aDF[ , 4])
+      df <- data.frame(ID = ID, 
+                       assignmentNumber = assignmentNumber, 
+                       date = date, 
+                       grade = grade)
+      # Writing subfunction to actually handle adding/ updating.
+      aRowUpdater <- function(df) {
+            sql <- "SELECT * FROM assignments AS a WHERE a.ID = :ID AND a.date = :date"
+            query <- dbGetPreparedQuery(conn, sql, bind.data = df)      
+            if (nrow(query) == 0) {
+                  sql <- "INSERT INTO assignments VALUES (:ID, :assignmentNumber, :date, :grade)"
+            } else {
+                  sql <- "UPDATE assignments 
+                  SET assignmentNumber = :assignmentNumber, grade = :grade 
+                  WHERE ID = :ID AND date = :date"
+            }
+            dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
+            }
+      # Running subfunction
+      aRowUpdater(aDF)
+      }
+
 
 
 #' Update "mcAnswers" table with new (or corrected) data.
