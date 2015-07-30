@@ -33,10 +33,16 @@ rowUpdater <- function(df, sql1, ifsql, elsesql) {
       dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
 }
 
+
+#' Edit tables directly.
+#' 
+#' Can mess things up; not really for user use.  
+#' @param table A database table to be edited.
+#' @param conn An SQL connection.
 DBedit <- function(table, conn = DBconn()) {
       tab <- dbReadTable(conn, table)
       tab <- edit(tab)
-      dbWriteTable(con, table, tab, overwrite=TRUE, row.names = FALSE)
+      dbWriteTable(conn, table, tab, overwrite=TRUE, row.names = FALSE)
 }
 #' Update "students" table with new (or corrected) data.
 #' 
