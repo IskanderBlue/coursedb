@@ -17,6 +17,10 @@
 #' 
 #' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @param table The name of a table to be shown.  Enter in quotations ("table").
+#' @examples tbls <- listTables() # Assign names of tables to vector.
+#' showTable(tbls[3]) # Show the 3rd table, longformGrades.
+#' readStudents() # Show the students table.
+#' readAllInfo() # List the entries in all tables by columns.
 #' 
 #' @name basicOutputs
 NULL
@@ -79,8 +83,8 @@ readAllInfo <- function(conn = DBconn()) {
 #' 
 #' @param givenNames A string, a student's first name (and any middle names used).  
 #' @param lastName A string,  that student's last name.
-#' 
 #' @return A dataframe containing the IDs, given names, and last names of all matches.
+#' @examples NameToID("Jarl", "Imhotep")
 
 NameToID <- function(givenNames, lastName) {
       IDs <- dbGetQuery(conn = DBconn(), 
@@ -109,7 +113,7 @@ NameToID <- function(givenNames, lastName) {
 #'    \item The student's score as a fraction of the full score.  
 #' }
 #' @seealso \code{\link{IDToAssignmentMark}}
-
+#' @examples IDAndExamNumberToGrade(555555555, "1")
 IDAndExamNumberToGrade <- function(ID, examNumber) {
       # 1         match ID to answers (mcAnswers) and grades (longformGrades)
       df <- as.data.frame(cbind(ID, examNumber))
@@ -168,6 +172,7 @@ IDAndExamNumberToGrade <- function(ID, examNumber) {
 #'    \item The student's score as a fraction of the full score.  
 #' }
 #' @seealso \code{\link{IDAndExamNumberToGrade}}
+#' @examples IDToAssignmentMark(5555555555, "1")
 IDToAssignmentMark <- function(ID, assignmentNumber) {
       # 1   Match ID and assignmentNumber to score (from assignments table)
       #     and get full score for assignment
@@ -181,7 +186,7 @@ IDToAssignmentMark <- function(ID, assignmentNumber) {
                               bind.data = df)
       if (length(unique(a$assignmentNumber)) > 2) {stop("Assignment number not unique.")}
       # 2   Return vector: mark, fraction
-      return(c(mark = a[1,1], outOf = a[2,1], fraction = a[1,1]/a[2,1]))
+      return(c(mark = a[1, 1], outOf = a[2, 1], fraction = a[1, 1] / a[2, 1]))
 }
 
 #' Get a given student's attendance grade.    
