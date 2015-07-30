@@ -16,6 +16,7 @@
 
 createDB <- function(conn = DBconn()) {
   students <- read.csv(system.file("csv/students.csv", package="coursedb"))
+  students$ID <- as.character(students$ID)
   dbWriteTable(conn, "students", students, row.names = FALSE)
   
   assignments <- read.csv(system.file("csv/assignments.csv", package="coursedb"))
