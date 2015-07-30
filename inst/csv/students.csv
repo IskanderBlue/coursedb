@@ -1,11 +1,11 @@
 ID,email,lastName,givenNames,program,notes
-111111111,abee@uwo.ca,ay,bee,actuarial science,first entry
-222222222,cdeedou@uwo.ca,cee,deedoublename,actuarial science,first of two with same names
-333333333,cdeedou2@uwo.ca,cee,deedoublename,statistics,second of two with same names
-444444444,gaitch@uwo.ca,gee,aitch,statistics,
-555555555,ajay@uwo.ca,aye,jay,statistics,
-666666666,kell@uwo.ca,kay,ell,financial modelling,
-777777777,eenn@uwo.ca,emm,enn,financial modelling,
-888888888,opee@uwo.ca,oh,pee,actuarial science,
+111111111,banderso@uwo.ca,Andersson,Bernard,actuarial science,first entry
+222222222,dcarrend@uwo.ca,Carrender,Domino,actuarial science,first of two with same names
+333333333,dcarrend2@uwo.ca,Carrender,Domino,statistics,second of two with same names
+444444444,hgulman@uwo.ca,Gulman,Heather,statistics,
+555555555,jimhotep@uwo.ca,Imhotep,Jarl,statistics,
+666666666,lkhan@uwo.ca,Khan,Lorna,financial modelling,
+777777777,nmonty@uwo.ca,Monty,Neil,financial modelling,
+888888888,poklahom@uwo.ca,Oklahoma,Pei,actuarial science,
 999999999,,,,,correct answers
-123456789,eteelon@uwo.ca,ess,teelongname,financial modelling,"breaks pattern: id, name length"
+123456789,tqohar@uwo.ca,Qohar,Terrence,financial modelling,
