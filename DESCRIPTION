@@ -7,7 +7,7 @@ Author: Robert Lee
 Maintainer: Robert Lee <rlee35@uwo.ca>
 Description: Database and functions to store and access course-related 
              information (students, grades, dates, etc.) 
-License: What license is it under?
+License: GPL-2
 LazyData: TRUE
 Imports: RSQLite
 URL: https://github.com/IskanderBlue/coursedb
