@@ -15,7 +15,9 @@ numDate <- function(x) as.numeric(as.Date(x))
 #' A helper function for the all of the Updater-() functions.
 #' 
 #' Not expected to be accessed directly by users.
+#' Used by the \code{\link{data entry functions}}.
 #' 
+#' @family helper functions
 #' @param df A data.frame to be used to update the table.
 #' @param sql1 A string, the initial sql statement to find rows matching the criteria for an existing row.
 #' @param ifsql A string, the sql statement to be used if there are no such matching rows 
@@ -24,6 +26,7 @@ numDate <- function(x) as.numeric(as.Date(x))
 #'    (tells Updater-() to update matching rows).
 
 rowUpdater <- function(df, sql1, ifsql, elsesql) {
+      conn <- DBconn()
       query <- dbGetPreparedQuery(conn, sql1, bind.data = df)      
       if (nrow(query) == 0) {
             sql <- ifsql
@@ -77,26 +80,17 @@ UpdateStudents <- function(sDF) {
       notes <- as.character(sDF[ , 6])
       sql1 <- "SELECT * FROM students AS s WHERE s.ID = :ID"
       ifsql <- "INSERT INTO students VALUES (:ID, :email, :lastName, :givenNames, :program, :notes)"
-      elsesql <- "UPDATE students SET email = :email, lastName = :lastName, givenNames = :givenNames, 
-      program = :program, notes = :notes WHERE ID = :ID"
+      elsesql <- "UPDATE students SET email = :email, lastName = :lastName, givenNames = :givenNames, program = :program, notes = :notes WHERE ID = :ID"
       # Loop through variables, calling rowUpdater() to update each 
       # database row appropriately.
-      df <- data.frame(placeholder = 1)
       for (i in 1:length(ID)) {
-            df$ID <- ID[i]
-            df$email <- email[i]
-            df$lastName <- lastName[i]
-            df$givenNames <- givenNames[i]
-            df$program <- program[i]
-            df$notes <- notes[i]
-            query <- dbGetPreparedQuery(conn, sql1, bind.data = df)      
-            if (nrow(query) == 0) {
-                 sql <- ifsql
-            } else {
-                 sql <- elsesql
-            }
-            dbGetPreparedQuery(conn, statement = sql, bind.data = df)      
-            # rowUpdater(df, sql1, ifsql, elsesql)
+            df <- data.frame(ID = ID[i],
+                             email = email[i],
+                             lastName = lastName[i],
+                             givenNames = givenNames[i],
+                             program = program[i],
+                             notes = notes[i])
+            rowUpdater(df, sql1, ifsql, elsesql)
       }
 }
 
@@ -126,16 +120,14 @@ UpdateAssignments <- function(aDF) {
       date <- numDate(aDF[ , 4])
       sql1 <- "SELECT * FROM assignments AS a WHERE a.ID = :ID AND a.date = :date"
       ifsql <- "INSERT INTO assignments VALUES (:ID, :assignmentNumber, :date, :grade)"
-      elsesql <- "UPDATE assignments SET assignmentNumber = :assignmentNumber, grade = :grade 
-      WHERE ID = :ID AND date = :date"
+      elsesql <- "UPDATE assignments SET assignmentNumber = :assignmentNumber, grade = :grade WHERE ID = :ID AND date = :date"
       # Loop through variables, calling rowUpdater() to update each 
       # database row appropriately.
-      df <- data.frame(placeholder = 1)
       for (i in 1:length(ID)) {
-            df$ID <- ID[i]
-            df$assignmentNumber <- assignmentNumber[i]
-            df$date <- date[i]
-            df$grade <- grade[i]
+            df <- data.frame(ID = ID[i], 
+                             assignmentNumber = assignmentNumber[i],
+                             date = date[i],
+                             grade = grade[i])
             rowUpdater(df, sql1, ifsql, elsesql)
       }
 }
@@ -308,12 +300,12 @@ UpdateClassParticipation <- function(cpDataFrame) {
       # database row appropriately.
       df <- data.frame()
       for (i in 1:length(ID)) {
-            df$ID <- ID[i]
-            df$attended <- attended[i]
-            df$questionAnswered <- questionAnswered[i]
-            df$questionAsked <- questionAsked[i]
-            df$participationNotes <- participationNotes[i]
-            df$date <- date[i]
+            df <- data.frame(ID = ID[i], 
+                             attended = attended[i], 
+                             questionAnswered = questionAnswered[i], 
+                             questionAsked = questionAsked[i], 
+                             participationNotes = participationNotes[i], 
+                             date = date[i])
             rowUpdater(df, sql1, ifsql, elsesql)
       }
 }
