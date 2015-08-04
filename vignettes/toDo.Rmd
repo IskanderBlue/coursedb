@@ -4,6 +4,9 @@ author: "Robert Lee"
 date: "July 28, 2015"
 output: pdf_document
 ---
+
+July 28th 2015
+
 Data frame vs. matrix + vectors
 Document what is needed.
       Give default plus way to override.  
@@ -55,6 +58,60 @@ Tests that are good for testing are not necessarily good for examples.  ***
 Go through check output, fix what can be fixed.
         
 
+********
 
-August 4th
+
+August 4th 2015
+
 Maybe add fraction of given # option to IDToQuestionsAsked/ Answered/ Combined?
+
+
+No way to delete row by rownumber
+Give each row an ID?
+
+Option to overwrite course.db in createDB()
+
+Be more flexible with how to update database.
+      Another argument to update students (columns or something)
+      columns default= ID = 1, ...
+      Or named columns rather than numbered
+            columns = c(..., . )
+      columns = c(ID= "ID", email = "email", ...)
+      How flexible?  Only update certain columns.
+            Try with all.
+I choose names for things in database, but make it easy for people to import things into database.
+      Import things with different names should work.
+      Data.frames can have more columns, in differnt orders, but MUST have columns I need.  
+      students: always need ID, names, email; not necessary to include program, notes.
+            Make it possible to enter, but not required.
+            
+Flip necessaryness of assignmentNumber of date for assignments, etc.
+Same with examName
+More general: examName, assignmentName, not examNumber, assignmentNumber
+
+classParticpation basically entirely optional
+      Good to have, but implementation won't worry too much.
+
+
+
+Create standard empty database.
+      Import data afterwards.
+      
+      
+Spend time on manual.
+      Don't be complete.
+      Start out really basically.
+      Here's a typical workflow. (One possible workflow -- someone starting out, doing simple things.)
+            Here's how you enter students.
+                  Enter more, do this.
+            Enter assignemnts , do this
+            Enter ...
+            Print out grades, do this.
+      If I can't explain it, I should probably simplify it.
+
+In namespace file as exported, users can see it.
+      Can just export ones users use.
+      start functionnames with a . if internal only.
+      
+      
+Later, write functions for R beginners -- get stuff into data.frames
