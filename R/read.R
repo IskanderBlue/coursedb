@@ -172,7 +172,7 @@ IDAndExamNumberToGrade <- function(ID, examNumber) {
 #'    \item The student's score as a fraction of the full score.  
 #' }
 #' @seealso \code{\link{IDAndExamNumberToGrade}}
-#' @examples IDToAssignmentMark(5555555555, "1")
+#' @examples IDToAssignmentMark(555555555, "2")
 IDToAssignmentMark <- function(ID, assignmentNumber) {
       # 1   Match ID and assignmentNumber to score (from assignments table)
       #     and get full score for assignment
@@ -209,6 +209,12 @@ IDToAssignmentMark <- function(ID, assignmentNumber) {
 #'    }
 #' @return A numeric value.  
 #' @seealso \code{\link{IDToClassParticipation}}
+#' @examples IDToAttendance(555555555)
+#' IDToAttendance(111111111) # 4 / 5 classes attended
+#' IDToAttendance(111111111, attendanceMethod = 4) # One day considered a freebie.  
+#' IDToAttendance(111111111, attendanceMethod = 6) # Also possible
+#' IDToAttendance(222222222) # 3 / 5 classes attended
+
 IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate") {
       # Attendance weighting default: % of dates so far attended; otherwise x/y(specified), capped at 1.
       ID <- as.data.frame(ID)
@@ -217,7 +223,8 @@ IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate") {
                               FROM classParticipation AS c
                               WHERE c.ID = :ID",
                               bind.data = ID)
-      attendedSoFar <- sum(unique(c$attended[c$date <= date])) # Number of dates attended to date
+      attendedSoFar <- length(unique(c$date[c$attended == TRUE])) # Number of dates attended to date
+      evalMethod <- checkNumeric(attendanceMethod)
       if (is.numeric(attendanceMethod)) {
             potentialDates <- attendanceMethod
       } else {
@@ -227,6 +234,7 @@ IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate") {
             potentialDates <- length(unique(c$date[c$date <= date]))
       }
       attendanceGrade <- min(attendedSoFar/potentialDates, 1)
+      return(attendanceGrade)
 }
 
 
@@ -257,6 +265,12 @@ IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate") {
 #' @seealso \code{\link{IDToClassParticipation}}
 #' @seealso \code{\link{IDToQuestionsAnswered}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
+#' @examples IDToQuestionsAsked(111111111)
+#' IDToQuestionsAsked(222222222)
+#' IDToQuestionsAsked(333333333)
+#' IDToQuestionsAsked(333333333, evalMethod = 1) # 100% if at least 1 question answered.
+#' IDToQuestionsAsked(222222222, evalMethod = 1) # Still did not meet threshold.
+
 IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
       #     Default evaluation method:
       #     Find the maximum number of questions asked.  
@@ -269,6 +283,7 @@ IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
                               WHERE c.ID = :ID",
                               bind.data = ID)
       qs <- sum(c$questionAsked[c$date <= date] != "")
+      evalMethod <- checkNumeric(evalMethod)
       if (is.numeric(evalMethod)) {
             qGrade <- c(questionsAsked = qs, mark = 0, threshold = evalMethod)
             if (qs >= evalMethod) {qGrade[2] <- 1} 
@@ -313,10 +328,14 @@ IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
 #'    \item If a threshold number was given as the evalMethod, the threshold 
 #'          for full marks.
 #' }
-
 #' @seealso \code{\link{IDToClassParticipation}}
 #' @seealso \code{\link{IDToQuestionsAsked}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
+#' @examples IDToQuestionsAnswered(111111111)
+#' IDToQuestionsAnswered(222222222)
+#' IDToQuestionsAnswered(333333333)
+#' IDToQuestionsAnswered(222222222, evalMethod = 3) # Answered 3 questions; full marks.
+#' IDToQuestionsAnswered(111111111, evalMethod = 3) # Did not answer 3 questions; no marks.
 IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
       #     Default evaluation method:
       #     Find the maximum number of questions answered.  
@@ -329,6 +348,7 @@ IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "fraction"
                               WHERE c.ID = :ID",
                               bind.data = ID)
       qs <- sum(c$questionAnswered[c$date <= date] != "")
+      evalMethod <- checkNumeric(evalMethod)
       if (is.numeric(evalMethod)) {
             qGrade <- c(questionsAnswered = qs, mark = 0, threshold = evalMethod)
             if (qs >= evalMethod) {qGrade[2] <- 1} 
@@ -379,6 +399,9 @@ IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "fraction"
 #' @seealso \code{\link{IDToQuestionsAsked}}
 #' @seealso \code{\link{IDToQuestionsAnswered}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
+#' @examples IDToCombinedQuestions(333333333) # Most responses --> full marks.
+#' IDToCombinedQuestions(111111111) # 3 responses while another student gave 5 --> 60%
+#' IDToCombinedQuestions(111111111, evalMethod = 3) # 3 as the threshold number --> full marks.
 IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
       #     Default evaluation method:
       #     Find the maximum number of questions asked and answered.  
@@ -391,6 +414,7 @@ IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "fraction"
                               WHERE c.ID = :ID",
                               bind.data = ID)
       qs <- sum(c$questionAsked[c$date <= date] != "") + sum(c$questionAnswered[c$date <= date] != "")
+      evalMethod <- checkNumeric(evalMethod)
       if (is.numeric(evalMethod)) {
             qGrade <- c(questions = qs, mark = 0, threshold = evalMethod)
             if (qs >= evalMethod) {qGrade[2] <- 1} 
@@ -444,6 +468,14 @@ IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "fraction"
 #' @seealso \code{\link{IDToQuestionsAsked}}
 #' @seealso \code{\link{IDToQuestionsAnswered}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
+#' @examples IDToClassParticipation(111111111)
+#' IDToClassParticipation(111111111, questionMethod = c("ask", "fraction")) # Count questions asked instead of answered.
+#' IDToClassParticipation(222222222)
+#' IDToClassParticipation(222222222, cpWeighting = c(1, 4)) # Put 80% weight on questions answered.
+#' IDToClassParticipation(222222222, cpWeighting = c(0, 1)) # Ignore attendance (only count questions).
+#' IDToClassParticipation(222222222, cpWeighting = c(0, 1), questionMethod = c("both", "fraction")) # Ignore attendance, count questions asked and answered.
+#' IDToClassParticipation(222222222, cpWeighting = c(0, 1), questionMethod = c("both", 3)) # Same as previous, but use a threshold of 3 responses.
+#' IDToClassParticipation(333333333, questionMethod = c("both", "fraction")) # Full attendance, the most questions asked/answered.
 IDToClassParticipation <- function(ID, date = Sys.Date(), cpWeighting = c(0.5,0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction")) {
       # Weighting default: .5 attendance, .5 questions
       if (is.numeric(cpWeighting) != TRUE) {
@@ -484,6 +516,7 @@ IDToClassParticipation <- function(ID, date = Sys.Date(), cpWeighting = c(0.5,0.
 #' }
 #' @seealso \code{\link{IDToAssignmentMark}}
 #' @seealso \code{\link{TestMarks}}
+#' @examples AssignmentMarks(111111111)
 AssignmentMarks <- function(ID, date = Sys.Date()) {
       a <- readAssignments()
       uniqueA <- unique(a$assignmentNumber[a$date <= date])
@@ -512,6 +545,7 @@ AssignmentMarks <- function(ID, date = Sys.Date()) {
 #' }
 #' @seealso \code{\link{IDAndExamNumberToGrade}}
 #' @seealso \code{\link{AssignmentMarks}}
+#' @examples TestMarks(111111111)
 TestMarks <- function(ID, date = Sys.Date()) {
       allMC <- readMCAnswers()
       allLF <- readLongformGrades()
@@ -565,7 +599,8 @@ TestMarks <- function(ID, date = Sys.Date()) {
 #' @seealso \code{\link{IDToClassParticipation}}
 #' @seealso \code{\link{AssignmentMarks}}
 #' @seealso \code{\link{TestMarks}}
-
+#' @examples IDToCurrentGrade(111111111, c(2, 0, 3, 5)) # 20% assignments, 30% other tests, 50% final exam
+#' IDToCurrentGrade(111111111, c(2, 1, 3, 4), cpWeighting = c(0,1)) # 20% assignments, 10% class participation (ignoring attendance) 30% other tests, 40% final exam
 IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction")) {
       # 1   Determine weighting (eg. assignments = .2, exams = .5)
       #                                   eg.   20% Assignments
@@ -597,11 +632,13 @@ IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting 
 #' 
 #' Enter the student's ID.  Returns a data.frame with any notes entered.  
 #' 
-#' @param ID A student's ID number (should be a 9 digit integer).
+#' @param ID A string containing a student's ID number (should be a 9 digit integer).
 #' @return A data.frame with a single column.  
 #' @seealso \code{\link{readStudents}}
-
-# What are my notes on this student?
+#' @examples IDToNotes("111111111")
+#' IDToNotes("222222222")
+#' IDToNotes("333333333")
+#' IDToNotes("444444444") # No notes. 
 IDToNotes <- function(ID) {
       df <- as.data.frame(ID)     
       dbGetPreparedQuery(conn = DBconn(), 
