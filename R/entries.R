@@ -13,7 +13,7 @@
 #'    If a row with a given value for ID already exists, 
 #'          UpdateStudents() assumes that the row should be corrected.  
 #' @family data entry functions
-#' @param sDF A dataframe with six columns.  
+#' @param sDF A dataframe with at least a column named "ID"; recommended: email, lastName, givenNames, perhaps program, notes, or whatever else you may wish to include in the students table of your database.  For example:
 #' \describe{
 #'    \item{ID}{Strings, the students' IDs (typically 9-digit integers). Note that 999999999 is used as the ID for correct responses.}
 #'    \item{email}{Strings, the email addresses.}
@@ -22,33 +22,37 @@
 #'    \item{program}{Strings, the program a student is enrolled in.}
 #'    \item{notes}{Strings, any notes you would like to include.}
 #' }
+#' @param columns A vector containing the names of the columns you wish to include.
 #' @examples sDF <- data.frame(ID = c("asd", 222222229, 122222229), email = c(NA, "222semail@@address.com", "abcd@@email.com"), lastName = c("Abelard", "Semekovic", "Kovacs"), givenNames = c("Eugene", "Juliana", "Takeshi"), program = c("statistics", "financial modelling", ""), notes = c("", "", "Terrifying.") ) 
 #' UpdateStudents(sDF) # Adds three lines to the students table.
 #' sDF <- data.frame(ID = c("asd", 222222229, 122222229), email = c(NA, "amended.email@@address.com", "abcd@@email.com"), lastName = c("Abelard", "Semekovic", "Kovacs"), givenNames = c("Eugene", "Juliana", "Takeshi"), program = c("statistics", "financial modelling", ""), notes = c("", "Amended line.", "Terrifying.") ) 
 #' UpdateStudents(sDF) # Amends student 222222229's entry.
 
-UpdateStudents <- function(sDF) {
-      ID <- as.character(sDF[ , 1])
-      email <- as.character(sDF[ , 2])
-      lastName <- as.character(sDF[ , 3])
-      givenNames <- as.character(sDF[ , 4])
-      program <- as.character(sDF[ , 5])
-      notes <- as.character(sDF[ , 6])
+UpdateStudents <- function(sDF, columns = c(ID= "ID", email = "email", lastName = "lastName", givenNames = "givenNames", program = "program", notes = "notes")) {
+      # Cutting 'sDF' data.frame down to only those columns listed in 'columns'
+      sDF[ , names(sDF) %in% columns]
+      
       sql1 <- "SELECT * FROM students AS s WHERE s.ID = :ID"
-      ifsql <- "INSERT INTO students VALUES (:ID, :email, :lastName, :givenNames, :program, :notes)"
-      elsesql <- "UPDATE students SET email = :email, lastName = :lastName, givenNames = :givenNames, program = :program, notes = :notes WHERE ID = :ID"
+      # Cobbling together ifsql and elsesql from info in 'columns'
+      ifVarNames <- columns[1]
+      for (i in columns[-1]){
+            ifVarNames <- paste(ifVarNames, ", :", i, sep = "")
+      }
+      ifsql <- paste("INSERT INTO students VALUES (:", ifVarNames, ")", sep = "")
+      elseVarNames <- paste(columns[columns != "ID"][1], " = :", columns[columns != "ID"][1], sep = "")
+      for (i in columns[columns != "ID"][-1]) {
+            currentPiece <- paste(columns[columns != "ID"][i], " = :", columns[columns != "ID"][i], sep = "")
+            elseVarNames <- paste(elseVarNames, ", ", currentPiece, sep = "")
+      }
+      elsesql <- paste("UPDATE students SET ",  elseVarNames, "WHERE ID = :ID", sep = "")
       # Loop through variables, calling rowUpdater() to update each 
       # database row appropriately.
-      for (i in 1:length(ID)) {
-            df <- data.frame(ID = ID[i],
-                             email = email[i],
-                             lastName = lastName[i],
-                             givenNames = givenNames[i],
-                             program = program[i],
-                             notes = notes[i])
+      for (i in 1:nrow(sDF)) {
+            df <- sDF[i, ]
             rowUpdater(df, sql1, ifsql, elsesql)
       }
 }
+
 
 #' Update "assignments" table with new (or corrected) data.
 #' 
