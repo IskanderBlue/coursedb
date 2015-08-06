@@ -69,16 +69,17 @@ Maybe add fraction of given # option to IDToQuestionsAsked/ Answered/ Combined?
 No way to delete row by rownumber
 Give each row an ID?
 
-Option to overwrite course.db in createDB()
+/Option to overwrite course.db in createDB()
 
-Be more flexible with how to update database.
-      Another argument to update students (columns or something)
-      columns default= ID = 1, ...
-      Or named columns rather than numbered
-            columns = c(..., . )
-      columns = c(ID= "ID", email = "email", ...)
-      How flexible?  Only update certain columns.
-            Try with all.
+/Be more flexible with how to update database.
+/      Another argument to update students (columns or something)
+/      columns default= ID = 1, ...
+/      Or named columns rather than numbered
+/            columns = c(..., . )
+/      columns = c(ID= "ID", email = "email", ...)
+/      How flexible?  Only update certain columns.
+/            Try with all.
+
 I choose names for things in database, but make it easy for people to import things into database.
       Import things with different names should work.
       Data.frames can have more columns, in differnt orders, but MUST have columns I need.  
@@ -115,3 +116,15 @@ In namespace file as exported, users can see it.
       
       
 Later, write functions for R beginners -- get stuff into data.frames
+
+
+
+August 6th 2015
+
+Mismatch between table and number of columns -- NA if columns not included.
+If too many columns included, ...not sure.
+
+query:
+createTable() <- table name, column names, etc.
+Empty data.frame
+df <- data.frame(ID = character(0))
