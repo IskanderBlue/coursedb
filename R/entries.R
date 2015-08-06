@@ -63,7 +63,7 @@ UpdateStudents <- function(sDF, columns = c(ID= "ID", email = "email", lastName 
 #' @param aDF A dataframe with four columns.  
 #' \describe{
 #'    \item{ID}{Strings, the students' IDs (typically 9-digit integers).}
-#'    \item{assignmentNumber}{Strings, the names or numbers of the assignments.}
+#'    \item{assignmentName}{Strings, the names or numbers of the assignments.}
 #'    \item{grade}{Numeric values, the grades recieved on assignments.}
 #'    \item{date}{\code{\link{date}} class objects.}
 #' }
@@ -73,21 +73,26 @@ UpdateStudents <- function(sDF, columns = c(ID= "ID", email = "email", lastName 
 #' aDF <- data.frame(ID = c(993456888, 222222229, 222222229), assignmentNumber = c("1", "1", "three"), grade = c(4, 5.5, 9), date = rep(Sys.Date(), 3) ) 
 #' UpdateAssignments(aDF) # Reduces grade in last entry from 10 to 9.
  
-UpdateAssignments <- function(aDF) {
-      ID <- as.character(aDF[ , 1])
-      assignmentNumber <- as.character(aDF[ , 2])
-      grade <- as.numeric(aDF[ , 3])
-      date <- numDate(aDF[ , 4])
+UpdateAssignments <- function(aDF, columns = c(ID = "ID", assignmentName = "assignmentName", grade = "grade", date = "date")) {
+      # Cutting 'aDF' data.frame down to only those columns listed in 'columns'
+      aDF[ , names(aDF) %in% columns]
       sql1 <- "SELECT * FROM assignments AS a WHERE a.ID = :ID AND a.date = :date"
-      ifsql <- "INSERT INTO assignments VALUES (:ID, :assignmentNumber, :date, :grade)"
-      elsesql <- "UPDATE assignments SET assignmentNumber = :assignmentNumber, grade = :grade WHERE ID = :ID AND date = :date"
+      # Cobbling together ifsql and elsesql from info in 'columns'
+      ifVarNames <- columns[1]
+      for (i in columns[-1]){
+            ifVarNames <- paste(ifVarNames, ", :", i, sep = "")
+      }
+      ifsql <- paste("INSERT INTO assignments VALUES (:", ifVarNames, ")", sep = "")
+      elseVarNames <- paste(columns[columns != "ID"][1], " = :", columns[columns != "ID"][1], sep = "")
+      for (i in columns[columns != "ID"][-1]) {
+            currentPiece <- paste(columns[columns != "ID"][i], " = :", columns[columns != "ID"][i], sep = "")
+            elseVarNames <- paste(elseVarNames, ", ", currentPiece, sep = "")
+      }
+      elsesql <- paste("UPDATE assignments SET ",  elseVarNames, "WHERE ID = :ID", sep = "")
       # Loop through variables, calling rowUpdater() to update each 
       # database row appropriately.
-      for (i in 1:length(ID)) {
-            df <- data.frame(ID = ID[i], 
-                             assignmentNumber = assignmentNumber[i],
-                             date = date[i],
-                             grade = grade[i])
+      for (i in 1:nrow(sDF)) {
+            df <- aDF[i, ]
             rowUpdater(df, sql1, ifsql, elsesql)
       }
 }
