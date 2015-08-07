@@ -80,23 +80,23 @@ Give each row an ID?
 /      How flexible?  Only update certain columns.
 /            Try with all.
 
-I choose names for things in database, but make it easy for people to import things into database.
-      Import things with different names should work.
-      Data.frames can have more columns, in differnt orders, but MUST have columns I need.  
-      students: always need ID, names, email; not necessary to include program, notes.
-            Make it possible to enter, but not required.
+/I choose names for things in database, but make it easy for people to import things into /database.
+/      Import things with different names should work.
+/      Data.frames can have more columns, in differnt orders, but MUST have columns I need.  
+/      students: always need ID, names, email; not necessary to include program, notes.
+/            Make it possible to enter, but not required.
             
-Flip necessaryness of assignmentNumber of date for assignments, etc.
-Same with examName
-More general: examName, assignmentName, not examNumber, assignmentNumber
+/Flip necessaryness of assignmentNumber of date for assignments, etc.
+/Same with examName
+/More general: examName, assignmentName, not examNumber, assignmentNumber
 
-classParticpation basically entirely optional
-      Good to have, but implementation won't worry too much.
+/classParticpation basically entirely optional
+/      Good to have, but implementation won't worry too much.
 
 
 
-Create standard empty database.
-      Import data afterwards.
+/Create standard empty database.
+/      Import data afterwards.
       
       
 Spend time on manual.
@@ -117,14 +117,22 @@ In namespace file as exported, users can see it.
       
 Later, write functions for R beginners -- get stuff into data.frames
 
-
+***********
 
 August 6th 2015
 
-Mismatch between table and number of columns -- NA if columns not included.
-If too many columns included, ...not sure.
+/Mismatch between table and number of columns -- NA if columns not included.
+/If too many columns included, ...not sure.
 
-query:
-createTable() <- table name, column names, etc.
-Empty data.frame
-df <- data.frame(ID = character(0))
+/query:
+/createTable() <- table name, column names, etc.
+/Empty data.frame
+/df <- data.frame(ID = character(0))
+
+****
+Mysterious 
+*Error in NextMethod() : object 'ID' not found*
+when I try to make a dataframe directly without first naming the vectors.
+****
+
+/Check whether NA/ NULL/ Empty values mess up class participation/ attendance calculations.
