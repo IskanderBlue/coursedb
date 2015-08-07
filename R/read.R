@@ -9,7 +9,7 @@
 #'    \item{readStudents()}{Returns the contents of the "students" table.}
 #'    \item{readAssignments()}{Returns the contents of the "assignments" table.}
 #'    \item{readMCAnswers()}{Returns the contents of the "mcAnswers" table.}
-#'    \item{readLongFormGrades()}{Returns the contents of the "longFormGrades" table.}
+#'    \item{readLFGrades()}{Returns the contents of the "longFormGrades" table.}
 #'    \item{classParticipation()}{Returns the contents of the "classParticipation" table.}
 #'    \item{readAllInfo()}{Returns the contents of all tables.}
 #' }
@@ -52,7 +52,7 @@ readMCAnswers <- function(conn = DBconn()) {
 }
 
 #' @rdname basicOutputs
-readLongformGrades <- function(conn = DBconn()) {
+readLFGrades <- function(conn = DBconn()) {
       dbGetQuery(conn, "select * from longformGrades")
 }
 
@@ -223,13 +223,13 @@ IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate") {
                               FROM classParticipation AS c
                               WHERE c.ID = :ID",
                               bind.data = ID)
-      attendedSoFar <- length(unique(c$date[c$attended == TRUE])) # Number of dates attended to date
+      attendedSoFar <- length(na.omit(unique(c$date[c$attended == TRUE]))) # Number of dates attended to date
       evalMethod <- checkNumeric(attendanceMethod)
       if (is.numeric(attendanceMethod)) {
             potentialDates <- attendanceMethod
       } else {
             if (attendanceMethod != "toDate") {
-                  warning("Invald attendanceMethod value; defaulting to 'toDate'.")
+                  warning("Invalid attendanceMethod value; defaulting to 'toDate'.")
             } 
             potentialDates <- length(unique(c$date[c$date <= date]))
       }
