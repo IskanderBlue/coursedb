@@ -3,274 +3,276 @@
 # A series of functions to update the course.db database.  
 
 
+#' Generic function to update tables.
+#' 
+#' @param table A string containing the name of the table to be updated.
+#' @param newDF A data.frame containing the info to be added to the table (or updated)
+#' @param columns A vector of strings, the names of the specific columns to be added to the table.
+#' @param vitalColumns A vector of strings, the names of the columns by which UpdateTables() is to recognize whether a row is already in the database and needs updating or is new and is to be appended.
+#' @param asCha A logical vector, TRUE where the columns should be entered as characters rather than numerics.  Keeps R from deciding that IDs or names made only of digits are actually numeric values.
+#' @examples 
+#' table <- "students"
+#' sDF <- data.frame(ID = c("asd", 222222229, 122222229), email = c(NA, "222semail@@address.com", "abcd@@email.com"), lastName = c("Abelard", "Semekovic", "Kovacs"), givenNames = c("Eugene", "Juliana", "Takeshi"), program = c("statistics", "financial modelling", ""), notes = c("", "", "Terrifying.") ) 
+#' columns <- c("ID", "email", "givenNames", "lastName")
+#' vitalColumns <- c("ID")
+#' asCha <- c(T, T, T, T)
+#' UpdateTable(table, sDF, columns, vitalColumns, asCha) # Adds three lines to the students table.
+#' sDF <- data.frame(ID = c("asd", 222222229, 122222229), email = c(NA, "amended.email@@address.com", "abcd@@email.com"), lastName = c("Abelard", "Semekovic", "Kovacs"), givenNames = c("Eugene", "Juliana", "Takeshi"), program = c("statistics", "financial modelling", ""), notes = c("", "Amended line.", "Terrifying.") ) 
+#' columns <- c("ID", "email", "givenNames", "lastName", "notes")
+#' UpdateTable(table, sDF, columns, vitalColumns, asCha) # Amends student 222222229's entry.
+
+
+#' table <- "assignments"
+#' aDF <- data.frame(ID = c(993456888, 222222229, 222222229), assignmentName = c("1", "1", "three"), grade = c(4, 5.5, 10), date = rep(Sys.Date(), 3) ) 
+#' columns <- c("ID", "date", "grade", "assignmentName")
+#' vitalColumns <- c("ID", "assignmentName")
+#' asCha <- c(T, F, F, T)
+#' UpdateTable(table, aDF, columns, vitalColumns, asCha) # Creates 3 new rows in 'assignments' table.
+#' aDF <- data.frame(ID = c(993456888, 222222229, 222222229), assignmentName = c("1", "1", "three"), grade = c(4, 5.5, 9), date = rep(Sys.Date(), 3) ) 
+#' UpdateTable(table, aDF, columns, vitalColumns, asCha) # Reduces grade in last entry from 10 to 9.
+
+
+#' table <- "mcAnswers"
+#' mcDF <- data.frame(ID = rep(c(567567567, 678678678, 999999999), each = 3), date = rep(Sys.Date(), length(ID)), answer = c(1, 1, 1, 2, 3, 4, 3, 2, 3), questionName = rep(1:3, 3), questionValue = rep(1, length(answer)), examName = rep("exm1.1(makeup)", length(answer)), examCode = rep("101", length(answer)))
+#' columns <- c("ID", "date", "answer", "questionName", "questionValue", "examName", "examCode")
+#' vitalColumns <- c("ID", "questionName", "examName")
+#' asCha <- c(T, F, T, T, F, T, T)
+#' UpdateTable(table, mcDF, columns, vitalColumns, asCha) # Enter answers to 3 MC questions for two students as well as the correct answers.
+#' mcDF$questionValue <- rep(c(2, 2, 1), 3)
+#' UpdateTable(table, mcDF, columns, vitalColumns, asCha) # Amend the question values from c(1, 1, 1) to c(2, 2, 1).
+
+#' table <- "longformGrades"
+#' ID = rep(c(567567567, 678678678, 999999999), each = 3)
+#' date = rep(Sys.Date(), length(ID))
+#' grade = c(8, 5, 2, 9, 4, 4, 10, 5, 5)
+#' questionName = rep(1:3, 3)
+#' examName = rep("exm1.1(makeup)", length(grade))
+#' examCode = rep("101", length(grade))
+#' lfDF <- data.frame(ID, date, grade, questionName, examName, examCode)
+#' columns <- c("ID", "date", "grade", "questionName", "examName", "examCode")
+#' vitalColumns <- c("ID", "questionName", "examName")
+#' asCha <- c(T, F, F, T, T, T)
+#' UpdateTable(table, lfDF, columns, vitalColumns, asCha) # Enter grades to 3 questions for two students as well as the maximum grades.
+#' lfDF$grade <- c(8, 3, 2, 9, 4, 5, 10, 5, 5)
+#' UpdateTable(table, lfDF, columns, vitalColumns, asCha) # Correct mistaken grade entries.
+
+#' table <- "classParticipation"
+#' cpDF <- data.frame(ID = c(993456888, 222222229, 222222229), date = rep(Sys.Date(), 3), attended = c(F, T, T), questionAnswered = c("", "Q3", ""), questionAsked = c("", "", "Why is option pricing so complicated?"), participationNotes = c("", "", "Came in late. Again.") ) 
+#' columns <- c("ID", "date", "attended", "questionAnswered", "questionAsked", "participationNotes")
+#' vitalColumns <- c("ID", "date", "questionAnswered", "questionAsked", "participationNotes")
+#' asCha <- c(T, F, F, T, T, T)
+#' UpdateTable(table, cpDF, columns, vitalColumns, asCha) # Enters three new participation records.
+#' cpDF$attended <- c(T, T, T)
+#' UpdateTable(table, cpDF, columns, vitalColumns, asCha) # Amends attendance for 1st student.
+
+UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, length(columns))) {
+      
+      # Cutting 'newDF' data.frame down to only those columns listed in 'columns'
+      newDF <- newDF[columns]
+      # Ensuring that appropriate columns are read as characters, not numerics.
+      newDF[asCha] <- lapply(newDF[asCha], as.character)
+      
+      # Cobbling the sql statements together from 'columns' and 'vitalColumns'.  
+      
+      # sql1
+      t.vitalVar <- paste("t.", vitalColumns[1], " = :", vitalColumns[1], sep = "")
+      for (i in vitalColumns[-1]) (t.vitalVar <- paste(t.vitalVar, " AND t.", i, " = :", i, sep = ""))
+      sql1 <- paste("SELECT * FROM ", table, " AS t WHERE ", t.vitalVar, sep = "")
+      
+      # ifsql
+      specificInsert <- columns[1]
+      for (i in columns[-1]) (specificInsert <- paste(specificInsert, i, sep = ", "))
+      ifVarNames <- columns[1]
+      for (i in columns[-1]) (ifVarNames <- paste(ifVarNames, ", :", i, sep = ""))
+      ifsql <- paste("INSERT INTO ", table, " (", specificInsert, ") VALUES (:", ifVarNames, ")", sep = "")
+      
+      # elsesql
+# Suppressing mysterious warnings:  
+#      1: In columns != vitalColumns :
+#            longer object length is not a multiple of shorter object length
+      storeWarn <- getOption("warn")
+      options(warn = -1)
+
+      vitalVar <- paste(vitalColumns[1], " = :", vitalColumns[1], sep = "")      
+      for (i in vitalColumns[-1]) (vitalVar <- paste(vitalVar, " AND ", i, " = :", i, sep = ""))
+      nonVitalVar <- paste(columns[columns != vitalColumns][1], " = :", columns[columns != vitalColumns][1], sep = "")
+      for (i in columns[columns != vitalColumns][-1]) (nonVitalVar <- paste(nonVitalVar, ", ", i, " = :", i, sep = ""))
+      elsesql <- paste("UPDATE ", table, " SET ", nonVitalVar, " WHERE ", vitalVar, sep = "")
+
+# Resetting default warnings.
+      options(warn = storeWarn)
+      
+      # Loop through variables, calling rowUpdater() to update each 
+      # database row appropriately.
+      for (i in 1:nrow(newDF)) {
+            df <- newDF[i, ]
+            rowUpdater(df, sql1, ifsql, elsesql)
+      }
+}
+
+
+
+
 #' Update "students" table with new (or corrected) data.
 #' 
 #' One function call can update an arbitrary number of student entries.  
 #' The key variable identifying a given table row as unique is ID.  
 #'    If a row with that ID value does not exist (eg. if ID was entered wrong initially), 
 #'          UpdateMCAnswers() will assume that a new row should be added to the table.  
-#'          See function AmendStudents() to fix such occurrances.  
+#'          See function removeRow() to fix such occurrances.  
 #'    If a row with a given value for ID already exists, 
 #'          UpdateStudents() assumes that the row should be corrected.  
 #' @family data entry functions
-#' @param sDF A dataframe with at least a column named "ID"; recommended: email, lastName, givenNames, perhaps program, notes, or whatever else you may wish to include in the students table of your database.  For example:
+#' @param newStudentDataFrame A dataframe with at least a column named "ID"; also possible: email, lastName, givenNames, program, notes.
 #' \describe{
 #'    \item{ID}{Strings, the students' IDs (typically 9-digit integers). Note that 999999999 is used as the ID for correct responses.}
 #'    \item{email}{Strings, the email addresses.}
-#'    \item{lastName}{Strings, the students' last names.}
 #'    \item{givenNames}{Strings, the students' first (and possibly middle) names.}
+#'    \item{lastName}{Strings, the students' last names.}
 #'    \item{program}{Strings, the program a student is enrolled in.}
 #'    \item{notes}{Strings, any notes you would like to include.}
 #' }
 #' @param columns A vector containing the names of the columns you wish to include.
-#' @examples sDF <- data.frame(ID = c("asd", 222222229, 122222229), email = c(NA, "222semail@@address.com", "abcd@@email.com"), lastName = c("Abelard", "Semekovic", "Kovacs"), givenNames = c("Eugene", "Juliana", "Takeshi"), program = c("statistics", "financial modelling", ""), notes = c("", "", "Terrifying.") ) 
+#' @examples
+#' sDF <- data.frame(ID = c("asd", 222222229, 122222229), email = c(NA, "222semail@@address.com", "abcd@@email.com"), lastName = c("Abelard", "Semekovic", "Kovacs"), givenNames = c("Eugene", "Juliana", "Takeshi"), program = c("statistics", "financial modelling", ""), notes = c("", "", "Terrifying.") ) 
 #' UpdateStudents(sDF) # Adds three lines to the students table.
-#' sDF <- data.frame(ID = c("asd", 222222229, 122222229), email = c(NA, "amended.email@@address.com", "abcd@@email.com"), lastName = c("Abelard", "Semekovic", "Kovacs"), givenNames = c("Eugene", "Juliana", "Takeshi"), program = c("statistics", "financial modelling", ""), notes = c("", "Amended line.", "Terrifying.") ) 
+#' sDF$email <- c(NA, "amended.email@@address.com", "abcd@@email.com") 
+#' sDF$notes <- c("", "Amended line.", "Terrifying.") 
 #' UpdateStudents(sDF) # Amends student 222222229's entry.
 
-UpdateStudents <- function(sDF, columns = c(ID= "ID", email = "email", lastName = "lastName", givenNames = "givenNames", program = "program", notes = "notes")) {
-      # Cutting 'sDF' data.frame down to only those columns listed in 'columns'
-      sDF[ , names(sDF) %in% columns]
-      
-      sql1 <- "SELECT * FROM students AS s WHERE s.ID = :ID"
-      # Cobbling together ifsql and elsesql from info in 'columns'
-      ifVarNames <- columns[1]
-      for (i in columns[-1]){
-            ifVarNames <- paste(ifVarNames, ", :", i, sep = "")
-      }
-      ifsql <- paste("INSERT INTO students VALUES (:", ifVarNames, ")", sep = "")
-      elseVarNames <- paste(columns[columns != "ID"][1], " = :", columns[columns != "ID"][1], sep = "")
-      for (i in columns[columns != "ID"][-1]) {
-            currentPiece <- paste(columns[columns != "ID"][i], " = :", columns[columns != "ID"][i], sep = "")
-            elseVarNames <- paste(elseVarNames, ", ", currentPiece, sep = "")
-      }
-      elsesql <- paste("UPDATE students SET ",  elseVarNames, "WHERE ID = :ID", sep = "")
-      # Loop through variables, calling rowUpdater() to update each 
-      # database row appropriately.
-      for (i in 1:nrow(sDF)) {
-            df <- sDF[i, ]
-            rowUpdater(df, sql1, ifsql, elsesql)
-      }
+UpdateStudents <- function(newStudentDataFrame, columns = c("ID", "email", "givenNames", "lastName", "program", "notes")) {
+      UpdateTable(table = "students", newDF = newStudentDataFrame, columns = columns, vitalColumns = "ID", asCha = rep(T, length(columns)))
 }
 
 
 #' Update "assignments" table with new (or corrected) data.
 #' 
-#' If in a given row of the data.frame parameter (aDF) ID and date are the same as a row in the assignments table, 
-#' that row is assumed to be a duplicate and the assignmentNumber and grade values of the existing row in 
+#' If in a given row of the data.frame parameter (aDF) ID and assignmentName are the same as a row in the assignments table, 
+#' that row is assumed to be a duplicate and the date and grade values of the existing row in 
 #' the table are updated rather than a new row created.  
 #' @family data entry functions
-#' @param aDF A dataframe with four columns.  
+#' @param newAssignmentDataFrame A dataframe with between two and four columns.  
 #' \describe{
-#'    \item{ID}{Strings, the students' IDs (typically 9-digit integers).}
-#'    \item{assignmentName}{Strings, the names or numbers of the assignments.}
-#'    \item{grade}{Numeric values, the grades recieved on assignments.}
-#'    \item{date}{\code{\link{date}} class objects.}
+#'    \item{ID}{The students' IDs (typically 9-digit integers).  Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#'    \item{date}{\code{\link{date}} class objects.  Do not set asCha equal to TRUE for this column.}
+#'    \item{grade}{Numeric values, the grades recieved on assignments.  Do not set asCha equal to TRUE for this column.}
+#'    \item{assignmentName}{The names or numbers of the assignments.  Should be entered using as.character() (set asCha equal to TRUE for this column).}
 #' }
+#' @param columns A vector containing the names of the columns you wish to include.
+#' @param asCha A logical vector specifiying which columns to deliberately enter as characters (as opposed to numerics, date objects, etc.).
 #' @seealso \code{\link{date}}
-#' @examples aDF <- data.frame(ID = c(993456888, 222222229, 222222229), assignmentNumber = c("1", "1", "three"), grade = c(4, 5.5, 10), date = rep(Sys.Date(), 3) ) 
-#' UpdateAssignments(aDF) # Creates three new rows in assignments table.
-#' aDF <- data.frame(ID = c(993456888, 222222229, 222222229), assignmentNumber = c("1", "1", "three"), grade = c(4, 5.5, 9), date = rep(Sys.Date(), 3) ) 
+#' @examples 
+#' aDF <- data.frame(ID = c(993456888, 222222229, 222222229), assignmentName = c("1", "1", "three"), grade = c(4, 5.5, 10), date = rep(Sys.Date(), 3) ) 
+#' UpdateAssignments(aDF) # Creates 3 new rows in 'assignments' table.
+#' aDF$grade <- c(4, 5.5, 9)
 #' UpdateAssignments(aDF) # Reduces grade in last entry from 10 to 9.
- 
-UpdateAssignments <- function(aDF, columns = c(ID = "ID", assignmentName = "assignmentName", grade = "grade", date = "date")) {
-      # Cutting 'aDF' data.frame down to only those columns listed in 'columns'
-      aDF[ , names(aDF) %in% columns]
-      sql1 <- "SELECT * FROM assignments AS a WHERE a.ID = :ID AND a.date = :date"
-      # Cobbling together ifsql and elsesql from info in 'columns'
-      ifVarNames <- columns[1]
-      for (i in columns[-1]){
-            ifVarNames <- paste(ifVarNames, ", :", i, sep = "")
-      }
-      ifsql <- paste("INSERT INTO assignments VALUES (:", ifVarNames, ")", sep = "")
-      elseVarNames <- paste(columns[columns != "ID"][1], " = :", columns[columns != "ID"][1], sep = "")
-      for (i in columns[columns != "ID"][-1]) {
-            currentPiece <- paste(columns[columns != "ID"][i], " = :", columns[columns != "ID"][i], sep = "")
-            elseVarNames <- paste(elseVarNames, ", ", currentPiece, sep = "")
-      }
-      elsesql <- paste("UPDATE assignments SET ",  elseVarNames, "WHERE ID = :ID", sep = "")
-      # Loop through variables, calling rowUpdater() to update each 
-      # database row appropriately.
-      for (i in 1:nrow(sDF)) {
-            df <- aDF[i, ]
-            rowUpdater(df, sql1, ifsql, elsesql)
-      }
-}
 
+UpdateAssignments <- function(newAssignmentDataFrame, columns = c("ID", "date", "grade", "assignmentName"), asCha = c(T, F, F, T)) {
+      UpdateTable(table = "assignments", newDF = newAssignmentDataFrame, columns = columns, vitalColumns = c("ID", "assignmentName"), asCha = asCha)
+}
 
 
 #' Update "mcAnswers" table with new (or corrected) data.
 #' 
 #' Use one function call per exam.  
-#' Key variables identifying a given table row as unique: ID, questionNumber, date. 
-#'    If a row with those values does not exist (eg. if ID or date were entered wrong initially), 
+#' Key variables identifying a given table row as unique: ID, questionNumber, examName. 
+#'    If a row with those values does not exist (eg. if ID or examName were entered wrong initially), 
 #'          UpdateMCAnswers() will assume that a new row should be added to the table.  
-#'          See function AmendMCEntry() to fix such occurrances.  
+#'          See function removeRow() to fix such occurrances.  
 #'    If a row with given values for those parameters already exists, 
 #'          UpdateMCAnswers() assumes that the line should be corrected.  
-#' The questionNumber column in the mcAnswers table is derived from the column 
-#'    names of the 'answers' parameter.  If the columns are not named, the 
-#'    column's position (1:ncol(answers)) is used.
 #' @family data entry functions
-#' @param ID A vector (typically of 9-digit integers), students' ID numbers.  
-#'          Note that 999999999, is used as the ID for correct responses.  
-#' @param answer A vector or matrix, the multiple choice answers to be entered 
-#'          or updated.  Each row should be the answers of a specific ID, each 
-#'          column the answers to a given question; if the columns are named, 
-#'          colnames(answer) is used to name the questions in the questionNumber 
-#'          column in the mcAnswers table.
-#'          Note that a set of correct answers should be entered with the ID: 999999999.
-#' @param examNumber A string, the number (or name) assigned to an exam.
-#' @param examCode A vector of strings, typically 3-digit integers, 
-#'          but it is entered using as.character().  
-#' @param questionNumber A vector of strings containing question names.  
-#'          Overwritten by colnames(answer) if that attrib exists.  
-#'          If questionNumber is not given as a parameter or as colnames(answer), 
-#'                it defaults to 1:ncol(answer).  
-#' @param questionValue A vector of numeric values, the marks that question is worth.
-#' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
-#' @examples #studentIDs <- c(567567567, 678678678, 999999999)
-#' answerMatrix <- matrix(data = c(1, 1, 1, 2, 3, 2, 3, 2, 3), nrow = 3)
-#' examName <- "exm1.1(makeup)"
-#' examCodes <- c(101, 101, 101) # All the same exam version.
-#' currentDate <- Sys.Date()
-#' UpdateMCAnswers(studentIDs, answerMatrix, examName, examCodes, date = currentDate) # Enter answers to 3 MC questions for two students as well as the correct answers.
-#' newQuestionValues <- c(2, 2, 1) 
-#' UpdateMCAnswers(studentIDs, answerMatrix, examName, examCodes, date = currentDate, questionValue = newQuestionValues) # Amend the question values from c(1, 1, 1) to c(2, 2, 1).
+#' @param newMCAnswersDataFrame A data.frame with between 3 and 7 columns.
+#' \describe{
+#'    \item{ID}{The students' IDs (typically 9-digit integers).  Note that 999999999, is used as the ID for correct responses.  Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#'    \item{date}{\code{\link{date}} class objects.  Do not set asCha equal to TRUE for this column.}
+#'    \item{answer}{The multiple choice answers to be entered.  Note that a set of correct answers should be entered with the ID: 999999999. Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#'    \item{questionName}{The names or numbers of the questions in a given test.  Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#'    \item{questionValue}{Numerics, the number of marks to assign to a correct answer.  Do not set asCha equal to TRUE for this column.}
+#'    \item{examName}{The name (or number) assigned to an exam. Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#'    \item{examCode}{Distiguish between different versions of the same exam.  Typically 3-digit integers. Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#' }
+#' @param columns A vector containing the names of the columns you wish to include.
+#' @param asCha A logical vector specifiying which columns to deliberately enter as characters (as opposed to numerics, date objects, etc.).
+#' @examples 
+#' mcDF <- data.frame(ID = rep(c(567567567, 678678678, 999999999), each = 3), date = rep(Sys.Date(), length(ID)), answer = c(1, 1, 1, 2, 3, 4, 3, 2, 3), questionName = rep(1:3, 3), questionValue = rep(1, length(answer)), examName = rep("exm1.1(makeup)", length(answer)), examCode = rep("101", length(answer)))
+#' UpdateMCAnswers(mcDF) # Enter answers to 3 MC questions for two students as well as the correct answers.
+#' mcDF$questionValue <- rep(c(2, 2, 1), 3)
+#' UpdateMCAnswers(mcDF) # Amend the question values from c(1, 1, 1) to c(2, 2, 1).
 
-UpdateMCAnswers <- function(ID, answer, examNumber, examCode, questionNumber = NULL, questionValue = rep(1, ncol(answer)), date = Sys.Date()) {
-      # Generate 'questionNumber' from colnames(answer).
-      questionNumber = colnames(answer)
-      if (is.null(questionNumber)) {
-            questionNumber <- 1:ncol(answer)
-      } 
-      sql1 <- "SELECT * FROM mcAnswers AS m WHERE m.ID = :ID AND m.questionNumber = :questionNumber AND m.date = :date"
-      ifsql <- "INSERT INTO mcAnswers VALUES (:ID, :answer, :questionNumber, :questionValue, :examNumber, :date, :examCode)"
-      elsesql <- "UPDATE mcAnswers 
-      SET answer = :answer, questionValue = :questionValue, examNumber = :examNumber, examCode = :examCode 
-      WHERE ID = :ID AND questionNumber = :questionNumber AND date = :date"
-      # Loop through answer matrix, calling rowUpdater() to update each 
-      # database row appropriately.
-      df <- data.frame(examNumber = as.character(examNumber), date = as.Date(date))
-      for (i in 1:length(ID)) {
-            df$ID <- ID[i]
-            df$examCode <- as.character(examCode[i])
-            for (j in 1:length(questionNumber)) {
-                  df$answer = as.character(answer[i, j])
-                  df$questionNumber = as.character(questionNumber[j])
-                  df$questionValue = as.numeric(questionValue[j])
-                  rowUpdater(df, sql1, ifsql, elsesql)
-            } 
-      }
+UpdateMCAnswers <- function(newMCDataFrame, columns = c("ID", "date", "answer", "questionName", "questionValue", "examName", "examCode"), asCha = c(T, F, T, T, F, T, T)) {
+      UpdateTable(table = "mcAnswers", newDF = newMCDataFrame, columns = columns, vitalColumns = c("ID", "questionName", "examName"), asCha = asCha)
 }
+
+
 
 #' Update "longformGrades" table with new (or corrected) data.
 #' 
 #' Use one function call per exam.  
-#' Key variables identifying a given table row as unique: ID, questionNumber, date. 
-#'    If a row with those values does not exist (eg. if ID or date were entered wrong initially), 
+#' Key variables identifying a given table row as unique: ID, questionNumber, examName. 
+#'    If a row with those values does not exist (eg. if ID or examName were entered wrong initially), 
 #'          UpdateLFGrades() will assume that a new row should be added to the table.  
-#'          See function AmendLFEntry() to fix such occurrances.  
+#'          See function removeRow() to fix such occurrances.  
 #'    If a row with given values for those parameters already exists, 
 #'          UpdateLFGrades() assumes that the line should be corrected.  
-#' The questionNumber column in the longformGrades table is derived from the column 
-#'    names of the 'grade' parameter.  If the columns are not named, the 
-#'    column's position (1:ncol(grade)) is used.
 #' @family data entry functions
-#' @param ID A vector (typically of 9-digit integers), students' ID numbers.  
-#'          Note that 999999999, is used as the ID for correct responses.  
-#' @param grade A vector or matrix of numeric elements containing the grades to be entered or updated.  
-#'          Each row should be the results for a specific ID, each 
-#'          column the grades for a given question; if the columns are named, 
-#'          colnames(grade) is used to name the questions in the questionNumber 
-#'          column in the longformGrades table.
-#'          Note that a set of maximum grades should be entered with the ID: 999999999.
-#' @param examNumber A string, the number (or name) assigned to an exam.
-#' @param examCode A string, typically a 3-digit integer, 
-#'          but it is entered using as.character().  
-#' @param questionNumber A vector of strings containing question names.  
-#'          Overwritten by colnames(grade) if that attrib exists.  
-#'          If questionNumber is not given as a parameter or as colnames(grade), 
-#'                it defaults to 1:ncol(grade).  
-#' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
-#' @examples #studentIDs <- c(567567567, 678678678, 999999999)
-#' gradeMatrix <- matrix(data = c(8, 9, 10, 5, 4, 5, 2, 4, 5), nrow = 3)
-#' examName <- "exm1.1(makeup)"
-#' examCodes <- c(101, 101, 101) # All the same exam version.
-#' currentDate <- Sys.Date()
-#' UpdateLFGrades(studentIDs, gradeMatrix, examName, examCodes, date = currentDate) # Enter grades to 3 questions for two students as well as the maximum grades.
-#' newGradeMatrix <- matrix(data = c(8, 9, 10, 3, 4, 5, 2, 5, 5), nrow = 3)
-#' UpdateMCAnswers(studentIDs, newGradeMatrix, examName, examCodes, date = currentDate) # Correct mistaken grade entries.
+#' @param newLFAnswersDataFrame A data.frame with between 3 and 6 columns.
+#' \describe{
+#'    \item{ID}{The students' IDs (typically 9-digit integers).  Note that 999999999, is used as the ID for correct responses.  Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#'    \item{date}{\code{\link{date}} class objects.  Do not set asCha equal to TRUE for this column.}
+#'    \item{grade}{Numeric values, the grades to be entered.  Note that a set of correct answers should be entered with the ID: 999999999. Do not set asCha equal to TRUE for this column.}
+#'    \item{questionName}{The names or numbers of the questions in a given test.  Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#'    \item{examName}{The name (or number) assigned to an exam. Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#'    \item{examCode}{Distiguish between different versions of the same exam.  Typically 3-digit integers. Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#' }
+#' @param columns A vector containing the names of the columns you wish to include.
+#' @param asCha A logical vector specifiying which columns to deliberately enter as characters (as opposed to numerics, date objects, etc.).
+#' @examples 
+#' ID = rep(c(567567567, 678678678, 999999999), each = 3)
+#' date = rep(Sys.Date(), length(ID))
+#' grade = c(8, 5, 2, 9, 4, 4, 10, 5, 5)
+#' questionName = rep(1:3, 3)
+#' examName = rep("exm1.1(makeup)", length(grade))
+#' examCode = rep("101", length(grade))
+#' lfDF <- data.frame(ID, date, grade, questionName, examName, examCode)
+#' UpdateLFGrades(lfDF) # Enter grades to 3 questions for two students as well as the maximum grades.
+#' lfDF$grade <- c(8, 3, 2, 9, 4, 5, 10, 5, 5)
+#' UpdateLFGrades(lfDF) # Correct mistaken grade entries.
 
-UpdateLFGrades <- function(ID, grade, examNumber, examCode, questionNumber = NULL, date = Sys.Date()) {
-      # Generate 'questionNumber' from colnames(grade).
-      questionNumber = colnames(grade)
-      if (is.null(questionNumber)) {
-            questionNumber <- 1:ncol(grade)
-      }
-      sql1 <- "SELECT * FROM longformGrades AS l WHERE l.ID = :ID AND l.questionNumber = :questionNumber AND l.date = :date"
-      ifsql <- "INSERT INTO longformGrades VALUES (:ID, :grade, :questionNumber, :examNumber, :date, :examCode)"
-      elsesql <- "UPDATE longformGrades 
-      SET grade = :grade, examNumber = :examNumber, examCode = :examCode 
-      WHERE ID = :ID AND questionNumber = :questionNumber AND date = :date"
-      # Loop through grade matrix, calling rowUpdater() to update each 
-      # database row appropriately.
-      df <- data.frame(examNumber = as.character(examNumber), date = as.Date(date))
-      for (i in 1:length(ID)) {
-            df$ID <- ID[i]
-            df$examCode <- as.character(examCode[i])
-            for (j in 1:length(questionNumber)) {
-                  df$grade = as.numeric(grade[i, j])
-                  df$questionNumber = as.character(questionNumber[j])
-                  rowUpdater(df, sql1, ifsql, elsesql)
-            } 
-      }
+UpdateLFGrades <- function(newLFDataFrame, columns = c("ID", "date", "grade", "questionName", "examName", "examCode"), asCha = c(T, F, F, T, T, T)) {
+      UpdateTable(table = "longformGrades", newDF = newLFDataFrame, columns = columns, vitalColumns = c("ID", "questionName", "examName"), asCha = asCha)
 }
 
 #' Update "classParticipation" table with new (or corrected) data.
 #' 
-#' If ID, questionAnswered, questionAsked, participationNotes, and date are all the same, 
-#' a given row is assumed to be a duplicate and the attended value of the existing row in 
-#' the table is updated rather than a new row created.  
+#' The default setting is to assume that all columns other than 'attended' are 
+#' necessary to correctly identify whether a row is new (and needs initial 
+#' entry) or old (and needs updating).  
+#' You, however, may not use all columns.  
+#' For example, maybe you do not use 'questionAnswered', 'questionAsked', or 
+#' 'participationNotes' at all.  In that case, set 
+#' column = c("ID", "date", "attended") and 
+#' vitalColumn = c("ID, "date").  In that case, any rows with the same date 
+#' and ID are considered the same and new 'attended' values overwrite the old 
+#' values for that row.  
+#' To delete an existing row, see removeRow().  
 #' @family data entry functions
-#' @param cpDataFrame A dataframe with six columns.  
+#' @param newCPDataFrame A dataframe with up to six columns.  
 #' \describe{
-#'    \item{ID}{The students' IDs, typically 9-digit integers, but entered as strings.}
-#'    \item{attended}{Boolean/ logical values, whether students attended on that date.}
-#'    \item{questionAnswered}{Strings, defaulting to ""; the questions the student answered.}
-#'    \item{questionAsked}{Strings, defaulting to ""; the questions the student asked.}
-#'    \item{participationNotes}{Strings, any notes you wish to include.}
-#'    \item{date}{\code{\link{date}} class objects.}
+#'    \item{ID}{The students' IDs (typically 9-digit integers).  Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#'    \item{date}{\code{\link{date}} class objects.  Do not set asCha equal to TRUE for this column.}
+#'    \item{attended}{Boolean/ logical values, whether students attended on that date.  Do not set asCha equal to TRUE for this column.}
+#'    \item{questionAnswered}{Strings, defaulting to ""; the questions the student answered.  Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#'    \item{questionAsked}{Strings, defaulting to ""; the questions the student asked.  Should be entered using as.character() (set asCha equal to TRUE for this column).}
+#'    \item{participationNotes}{Strings, any notes you wish to include.  Should be entered using as.character() (set asCha equal to TRUE for this column).}
 #' }
 #' @seealso \code{\link{date}}
-#' @examples cpDF <- data.frame(ID = c(993456888, 222222229, 222222229), attended = c(F, T, T), questionAnswered = c("", "Q3", ""), questionAsked = c("", "", "Why is option pricing so complicated?"), participationNotes = c("", "", "Came in late. Again."), date = rep(Sys.Date(), 3) ) 
+#' @examples 
+#' cpDF <- data.frame(ID = c(993456888, 222222229, 222222229), attended = c(F, T, T), questionAnswered = c("", "Q3", ""), questionAsked = c("", "", "Why is option pricing so complicated?"), participationNotes = c("", "", "Came in late. Again."), date = rep(Sys.Date(), 3) ) 
 #' UpdateClassParticipation(cpDF) # Enters three new participation records.
 #' cpDF$attended <- c(T, T, T)
 #' UpdateClassParticipation(cpDF) # Amends attendance for 1st student.
 
-UpdateClassParticipation <- function(cpDataFrame) {
-      # Making sure vectors are in the right format.
-      ID <- as.character(cpDataFrame[ , 1])
-      attended <- as.logical(cpDataFrame[ , 2])
-      questionAnswered <- as.character(cpDataFrame[ , 3])
-      questionAsked <- as.character(cpDataFrame[ , 4])
-      participationNotes <- as.character(cpDataFrame[ , 5])
-      date <- numDate(cpDataFrame[ , 6])
-      sql1 <- "SELECT * FROM classParticipation AS c WHERE c.ID = :ID AND c.questionAnswered = :questionAnswered AND c.questionAsked = :questionAsked AND c.participationNotes = :participationNotes AND c.date = :date"
-      ifsql <- "INSERT INTO classParticipation VALUES (:ID, :date, :attended, :questionAnswered, :questionAsked, :participationNotes)"
-      elsesql <- "UPDATE classParticipation 
-      SET attended = :attended
-      WHERE ID = :ID AND questionAnswered = :questionAnswered AND questionAsked = :questionAsked AND participationNotes = :participationNotes AND date = :date"
-      # Loop through variables, calling rowUpdater() to update each 
-      # database row appropriately.
-      df <- data.frame()
-      for (i in 1:length(ID)) {
-            df <- data.frame(ID = ID[i], 
-                             attended = attended[i], 
-                             questionAnswered = questionAnswered[i], 
-                             questionAsked = questionAsked[i], 
-                             participationNotes = participationNotes[i], 
-                             date = date[i])
-            rowUpdater(df, sql1, ifsql, elsesql)
-      }
+UpdateClassParticipation <- function(newCPDataFrame, columns = c("ID", "date", "attended", "questionAnswered", "questionAsked", "participationNotes"), vitalColmns = c("ID", "date", "questionAnswered", "questionAsked", "participationNotes"), asCha = c(T, F, F, T, T, T)) {
+      UpdateTable(table = "longformGrades", newDF = newCPDataFrame, columns = columns, vitalColumns = vitalColumns, asCha = asCha)
 }
