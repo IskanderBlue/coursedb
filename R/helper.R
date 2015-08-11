@@ -91,3 +91,18 @@ nameSplitter <- function(dframe, namesColumn) {
       }
       return(data.frame(dframe, givenNames = t(t(givenNames)), lastName = t(t(lastName))))
 }
+
+
+#' Function to remove rows erroneously entered into database.
+
+#' @param tableName A string, the name of the table to edit.
+#' @param rows A vector of rows to remove.
+#' @param conn A connection to an SQL database.
+#' @examples
+#' removeRow("students", 2)
+
+removeRow <- function(tableName, rows, conn = DBconn()) {
+      rows <- data.frame(rows = rows)
+      sql <- paste("DELETE FROM ", tableName, " WHERE rowNumber = :rows", sep = "")
+      dbGetPreparedQuery(conn, statement = sql, bind.data = rows)      
+}
