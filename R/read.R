@@ -100,12 +100,12 @@ NameToID <- function(givenNames, lastName) {
 
 #' Get a given student's grade on a given exam.  
 #' 
-#' Enter a student's ID and the name (or 'examNumber') of an exam.  
+#' Enter a student's ID and the name (or 'examName') of an exam.  
 #' Returns their score, the score on a perfectly completed exam, and their 
 #' score as a fraction.
 #' 
 #' @param ID A student's ID number (should be a 9 digit integer).
-#' @param examNumber A string, the number (or name) assigned to an exam.
+#' @param examName A string, the number (or name) assigned to an exam.
 #' @return A vector with 3 elements.  
 #' \enumerate{
 #'    \item The student's score.
@@ -113,42 +113,42 @@ NameToID <- function(givenNames, lastName) {
 #'    \item The student's score as a fraction of the full score.  
 #' }
 #' @seealso \code{\link{IDToAssignmentMark}}
-#' @examples IDAndExamNumberToGrade(555555555, "1")
-IDAndExamNumberToGrade <- function(ID, examNumber) {
+#' @examples IDAndExamNameToGrade(555555555, "1")
+IDAndExamNameToGrade <- function(ID, examName) {
       # 1         match ID to answers (mcAnswers) and grades (longformGrades)
-      df <- as.data.frame(cbind(ID, examNumber))
+      df <- as.data.frame(cbind(ID, examName))
       a <- dbGetPreparedQuery(conn = DBconn(),
-                              "SELECT answer, questionNumber, questionValue, examCode 
+                              "SELECT answer, questionName, questionValue, examCode 
                                     FROM mcAnswers AS m 
                                     WHERE m.ID = :ID 
-                                    AND m.examNumber = :examNumber",
+                                    AND m.examName = :examName",
                               bind.data = df)
       if (length(unique(a$examCode)) > 1) {warning("Exam code not unique.")}      
       g <- dbGetPreparedQuery(conn = DBconn(),
-                              "SELECT grade, questionNumber, examCode 
+                              "SELECT grade, questionName, examCode 
                                     FROM longformGrades AS l 
                                     WHERE l.ID = :ID 
-                                    AND l.examNumber = :examNumber",
+                                    AND l.examName = :examName",
                               bind.data = df)
       if (length(unique(g$examCode)) > 1) {warning("Exam code not unique.")}
       # 2     compare answers to correct answers, grades to total grades
-      df <- as.data.frame(cbind(examNumber, a$examCode[1])); colnames(df) <- c("examNumber", "examCode")
+      df <- as.data.frame(cbind(examName, a$examCode[1])); colnames(df) <- c("examName", "examCode")
       ca <- dbGetPreparedQuery(conn = DBconn(),
-                               "SELECT answer, questionNumber, questionValue 
+                               "SELECT answer, questionName, questionValue 
                                     FROM mcAnswers AS m 
                                     WHERE m.ID = 999999999 
-                                    AND m.examNumber = :examNumber 
+                                    AND m.examName = :examName 
                                     AND m.examCode = :examCode",
                                bind.data = df)
       tg <- dbGetPreparedQuery(conn = DBconn(),
-                               "SELECT grade, questionNumber 
+                               "SELECT grade, questionName 
                                     FROM longformGrades AS l 
                                     WHERE l.ID = 999999999 
-                                    AND l.examNumber = :examNumber 
+                                    AND l.examName = :examName 
                                     AND l.examCode = :examCode",
                                bind.data = df)
       # 3     tally total mark on test
-      total <- (sum(as.integer(a$questionValue[a$questionNumber == ca$questionNumber 
+      total <- (sum(as.integer(a$questionValue[a$questionName == ca$questionName 
                                               && a$answer == ca$answer])) 
                + sum(as.integer(g$grade)))
       outOf <- sum(as.integer(ca$questionValue)) + sum(as.integer(tg$grade))
@@ -159,32 +159,32 @@ IDAndExamNumberToGrade <- function(ID, examNumber) {
 
 #' Get a given student's mark on a given assignment.    
 #' 
-#' Enter a student's ID and the name (or 'examNumber') of an assignment.  
+#' Enter a student's ID and the name ('assignmentName') of an assignment.  
 #' Returns their score, the score on a perfectly completed assignment, and their 
 #' score as a fraction.
 #' 
 #' @param ID A student's ID number (should be a 9 digit integer).
-#' @param assignmentNumber A string, the number (or name) of an assignment.
+#' @param assignmentName A string, the number (or name) of an assignment.
 #' @return A vector with 3 elements.  
 #' \enumerate{
 #'    \item The student's score.
 #'    \item The full potential score.
 #'    \item The student's score as a fraction of the full score.  
 #' }
-#' @seealso \code{\link{IDAndExamNumberToGrade}}
+#' @seealso \code{\link{IDAndExamNameToGrade}}
 #' @examples IDToAssignmentMark(555555555, "2")
-IDToAssignmentMark <- function(ID, assignmentNumber) {
-      # 1   Match ID and assignmentNumber to score (from assignments table)
+IDToAssignmentMark <- function(ID, assignmentName) {
+      # 1   Match ID and assignmentName to score (from assignments table)
       #     and get full score for assignment
-      df <- as.data.frame(cbind(ID, assignmentNumber))
+      df <- as.data.frame(cbind(ID, assignmentName))
       a <- dbGetPreparedQuery(conn = DBconn(),
                               "SELECT grade, ID FROM assignments AS a 
                                     WHERE a.ID = :ID 
-                                    AND a.assignmentNumber = :assignmentNumber
+                                    AND a.assignmentName = :assignmentName
                                     OR a.ID = 999999999
-                                    AND a.assignmentNumber = :assignmentNumber",
+                                    AND a.assignmentName = :assignmentName",
                               bind.data = df)
-      if (length(unique(a$assignmentNumber)) > 2) {stop("Assignment number not unique.")}
+      if (length(unique(a$assignmentName)) > 2) {stop("Assignment name not unique.")}
       # 2   Return vector: mark, fraction
       return(c(mark = a[1, 1], outOf = a[2, 1], fraction = a[1, 1] / a[2, 1]))
 }
@@ -548,7 +548,7 @@ AssignmentMarks <- function(ID, date = Sys.Date()) {
 #' @examples TestMarks(111111111)
 TestMarks <- function(ID, date = Sys.Date()) {
       allMC <- readMCAnswers()
-      allLF <- readLongformGrades()
+      allLF <- readLFGrades()
       uniqueT <- unique(c(unique(allMC$examNumber[allMC$date <= date])), unique(allLF$examNumber[allLF$date <= date]))
       tMarks <- matrix(ncol = 3, nrow = length(uniqueT))
       colnames(tMarks) = c("mark", "outOf", "fraction")
