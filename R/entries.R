@@ -73,8 +73,16 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
       newDF[asCha] <- lapply(newDF[asCha], as.character)
       
       # Ensuring that columns and vitalColumns have names.
-      for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
-      for (i in 1:length(vitalColumns)) (if (names(vitalColumns)[i] == "") (names(vitalColumns)[i] <- vitalColumns[i]))
+      if (is.null(names(columns))) {
+            names(columns) <- columns
+      } else {
+            for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
+      }
+      if (is.null(names(vitalColumns))) {
+            names(vitalColumns) <- vitalColumns
+      } else {
+            for (i in 1:length(vitalColumns)) (if (names(vitalColumns)[i] == "") (names(vitalColumns)[i] <- vitalColumns[i]))
+      }
       
       # Cobbling the sql statements together from 'columns' and 'vitalColumns'.  
       
@@ -86,10 +94,10 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
       sql1 <- paste("SELECT * FROM ", table, " AS t WHERE ", t.vitalVar, sep = "")
       
       # ifsql
-      specificInsert <- names(columns)[1]
-      for (i in names(columns)[-1]) (specificInsert <- paste(specificInsert, i, sep = ", "))
-      ifVarNames <- columns[1]
-      for (i in columns[-1]) (ifVarNames <- paste(ifVarNames, ", :", i, sep = ""))
+      specificInsert <- "rowNumber"
+      for (i in names(columns)) (specificInsert <- paste(specificInsert, i, sep = ", "))
+      ifVarNames <- "rowNumber"
+      for (i in columns) (ifVarNames <- paste(ifVarNames, ", :", i, sep = ""))
       ifsql <- paste("INSERT INTO ", table, " (", specificInsert, ") VALUES (:", ifVarNames, ")", sep = "")
       
       # elsesql
@@ -108,10 +116,16 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
       # Resetting default warnings.
       options(warn = storeWarn)
       
+      # Determining row number for next new row in table.
+      maxsql <- paste("SELECT MAX(rowNumber) FROM ", table, sep = "")
+      nextRow <- dbGetQuery(conn = DBconn(), maxsql)[[1]]
+      
       # Loop through variables, calling rowUpdater() to update each 
       # database row appropriately.
       for (i in 1:nrow(newDF)) {
             df <- newDF[i, ]
+            nextRow <- nextRow + 1
+            df$rowNumber <- nextRow
             rowUpdater(df, sql1, ifsql, elsesql)
       }
 }
