@@ -76,7 +76,7 @@ DBedit <- function(table, conn = DBconn()) {
 #' df
 
 nameSplitter <- function(dframe, namesColumn) {
-      splitNames <- strsplit(x = dframe[[namesColumn]], split = " ")
+      splitNames <- strsplit(x = as.character(dframe[[namesColumn]]), split = " ")
       givenNames <- list()
       lastName <- list()
       length(lastName) <- length(splitNames)
