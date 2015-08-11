@@ -87,9 +87,9 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
       # Cobbling the sql statements together from 'columns' and 'vitalColumns'.  
       
       # sql1
-      t.vitalVar <- paste("t.", names(vitalColumns)[1], " = :", vitalColumns[1], sep = "")
+      t.vitalVar <- paste("t.", names(vitalColumns)[1], " = :", names(vitalColumns)[1], sep = "")
       for (i in names(vitalColumns)[-1]) {
-            (t.vitalVar <- paste(t.vitalVar, " AND t.", i, " = :", vitalColumns[[i]], sep = ""))
+            (t.vitalVar <- paste(t.vitalVar, " AND t.", i, " = :", i, sep = ""))
       }
       sql1 <- paste("SELECT * FROM ", table, " AS t WHERE ", t.vitalVar, sep = "")
       
@@ -119,6 +119,7 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
       # Determining row number for next new row in table.
       maxsql <- paste("SELECT MAX(rowNumber) FROM ", table, sep = "")
       nextRow <- dbGetQuery(conn = DBconn(), maxsql)[[1]]
+      if (is.na(nextRow)) (nextRow <- 0)
       
       # Loop through variables, calling rowUpdater() to update each 
       # database row appropriately.
