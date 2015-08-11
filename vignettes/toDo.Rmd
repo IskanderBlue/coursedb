@@ -66,8 +66,8 @@ August 4th 2015
 Maybe add fraction of given # option to IDToQuestionsAsked/ Answered/ Combined?
 
 
-No way to delete row by rownumber
-Give each row an ID?
+/No way to delete row by rownumber
+/Give each row an ID?
 
 /Option to overwrite course.db in createDB()
 
@@ -136,3 +136,10 @@ when I try to make a dataframe directly without first naming the vectors.
 ****
 
 /Check whether NA/ NULL/ Empty values mess up class participation/ attendance calculations.
+
+
+****
+August 11th 2015
+
+/Add more flexibility to column names in entries.R functions.
+/Function that seperates names into givenNames and lastName.
