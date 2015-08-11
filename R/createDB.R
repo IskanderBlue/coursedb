@@ -14,11 +14,11 @@
 
 createDB <- function(overwrite = FALSE, sample = FALSE, conn = DBconn()) {
       if (sample == FALSE) {
-            students <- data.frame(ID = character(0), email = character(0), givenNames = character(0), lastName = character(0), program = character(0), notes = character(0))
-            assignments <- data.frame(ID = character(0), date = numeric(0), grade = numeric(0), assignmentName = character(0))
-            mcAnswers <- data.frame(ID = character(0), date = numeric(0), answer = character(0), questionName = character(0), questionValue = numeric(0), examName = character(0), examCode = character(0))
-            longformGrades <- data.frame(ID = character(0), date = numeric(0), grade = numeric(0), questionName = character(0), examName = character(0), examCode = character(0))
-            classParticipation <- data.frame(ID = character(0), date = numeric(0), attended = logical(0), questionAnswered = character(0), questionAsked = character(0), participationNotes = character(0))
+            students <- data.frame(rowNumber = numeric(0), ID = character(0), email = character(0), givenNames = character(0), lastName = character(0), program = character(0), notes = character(0))
+            assignments <- data.frame(rowNumber = numeric(0), ID = character(0), date = numeric(0), grade = numeric(0), assignmentName = character(0))
+            mcAnswers <- data.frame(rowNumber = numeric(0), ID = character(0), date = numeric(0), answer = character(0), questionName = character(0), questionValue = numeric(0), examName = character(0), examCode = character(0))
+            longformGrades <- data.frame(rowNumber = numeric(0), ID = character(0), date = numeric(0), grade = numeric(0), questionName = character(0), examName = character(0), examCode = character(0))
+            classParticipation <- data.frame(rowNumber = numeric(0), ID = character(0), date = numeric(0), attended = logical(0), questionAnswered = character(0), questionAsked = character(0), participationNotes = character(0))
       } else {
             students <- read.csv(system.file("csv/students.csv", package="coursedb")) 
             students$ID <- as.character(students$ID)
