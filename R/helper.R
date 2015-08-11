@@ -60,3 +60,34 @@ DBedit <- function(table, conn = DBconn()) {
       tab <- edit(tab)
       dbWriteTable(conn, table, tab, overwrite=TRUE, row.names = FALSE)
 }
+
+
+
+#' Split a names column into givenNames and lastNames columns.
+#' 
+#' Must assign output to (the parameter data.frame or a new) data.frame
+#' 
+#' @param dframe A data.frame with a column containing first and last names in a single string.
+#' @param nameColumn The name of the column containing the names.  
+#' @examples 
+#' df <- data.frame(names = c("James Earl Jones", "Chow Yun Fat", "Julia-Louise Dreyfus"), stringsAsFactors = FALSE)
+#' namesColumn <- "names"
+#' df <- nameSplitter(df, namesColumn)
+#' df
+
+nameSplitter <- function(dframe, namesColumn) {
+      splitNames <- strsplit(x = dframe[[namesColumn]], split = " ")
+      givenNames <- list()
+      lastName <- list()
+      length(lastName) <- length(splitNames)
+      length(givenNames) <- length(splitNames)
+      
+      for (i in 1:length(splitNames)) {
+            for (j in 1:length(splitNames[[i]])-1) {
+                  givenNames[[i]] <- paste(givenNames[[i]], splitNames[[i]][j])
+            }
+            givenNames[[i]] <- substring(givenNames[[i]], 2)
+            lastName[[i]] <- splitNames[[i]][length(splitNames[[i]])]
+      }
+      return(data.frame(dframe, givenNames = t(t(givenNames)), lastName = t(t(lastName))))
+}
