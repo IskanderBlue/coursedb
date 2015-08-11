@@ -33,32 +33,32 @@ listTables <- function(conn = DBconn()) {
 
 #' @rdname basicOutputs
 showTable <- function(table, conn = DBconn()) {
-      dbGetQuery(conn, paste("select * from", table))
+      dbGetQuery(conn, paste("SELECT * FROM", table))
 }
 
 #' @rdname basicOutputs
 readStudents <- function(conn = DBconn()) {
-      dbGetQuery(conn, "select * from students")
+      dbGetQuery(conn, "SELECT ID, email, givenNames, lastname, program, notes FROM students")
 }
 
 #' @rdname basicOutputs
 readAssignments <- function(conn = DBconn()) {
-      dbGetQuery(conn, "select * from assignments")
+      dbGetQuery(conn, "SELECT ID, date, grade, assignmentName FROM assignments")
 }
 
 #' @rdname basicOutputs
 readMCAnswers <- function(conn = DBconn()) {
-      dbGetQuery(conn, "select * from mcAnswers")
+      dbGetQuery(conn, "SELECT ID, date, answer, questionName, questionValue, examName, examCode FROM mcAnswers")
 }
 
 #' @rdname basicOutputs
 readLFGrades <- function(conn = DBconn()) {
-      dbGetQuery(conn, "select * from longformGrades")
+      dbGetQuery(conn, "SELECT ID, date, grade, questionName, examName, examCode FROM longformGrades")
 }
 
 #' @rdname basicOutputs
 readClassParticipation <- function(conn = DBconn()) {
-      dbGetQuery(conn, "select * from classParticipation")
+      dbGetQuery(conn, "SELECT ID, date, attended, questionAnswered, questionAsked, participationNotes FROM classParticipation")
 }
 
 #' @rdname basicOutputs
