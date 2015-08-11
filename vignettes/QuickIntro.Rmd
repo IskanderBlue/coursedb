@@ -1,0 +1,50 @@
+---
+title: "Quick Introduction"
+author: "Robert Lee"
+date: "August 11, 2015"
+output: html_document
+---
+
+## A quick introduction on how to use the 'coursedb' package.  
+
+First, create an empty database.  
+```
+createDB()
+```
+For the purposes of this introduction, we will use a sample database.  
+If you'd like, you can create the same by running the following code; note that this overwrites any existing course.db you may already have created.  
+```{r}
+createDB(overwrite = TRUE, sample = TRUE)
+```
+Next, put some data in your database's tables.  
+We'll use `df` as the name of the data.frame and `columns` as the name of the vector specifying which of `df`'s columns are to be loaded into the table.  
+
+Note that if `df`'s  column names don't match up with the names of the columns in the database table (eg. the "assignments" table's column names are ID, date, grade, assignmentName), you will have to assign appropriate names to your data.frame's column names in `column`. 
+
+For example, if your equivalent columns' names are "Student.Number_X", "Date", "Score", and "Assignment", you should use:
+```
+columns <- c(ID = "Student.Number_X", date = "Date", grade = "Score", and assignmentName = "Assignment")
+UpdateAssignments(df, columns)
+```
+After you put your data into the database, you can retrieve it using output functions:  
+```
+readStudents()
+readAssignments()
+readMCAnswers()
+readLFGrades()
+readClassParticipation()
+```
+You can see a student's test or assignment scores by using their student ID:
+```
+TestMarks("111111111")
+AssignmentMarks("111111111")
+```
+
+To find a student's ID from their name, use: 
+```
+NameToID("Given Names", "LastName")
+```
+The package will also calculate a student's overall grade based on the information in the database.  You must specify how to weight the different categories of marks.  For example, to assign 20% of the grade to assignments, nothing to participation, 30% to (other) tests, and 50% to the student's last exam in the database, use `totalWeighting = c(0.2, 0, 0.3, 0.5)`.  
+```
+IDToCurrentGrade("111111111", c(.2, 0, .3, .5))
+```
