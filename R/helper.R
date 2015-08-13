@@ -113,36 +113,18 @@ removeRow <- function(tableName, rows, conn = DBconn()) {
 #' Determine which rows to remove.
 #' 
 #' @param table The table from which you wish to delete rows.
-#' @param badRowsDF A data.frame containing the characteristics of the rows you wish to delete.
-#' @param columns The specific columns in badRowsDF containing characteristics of the rows you wish to delete.
+#' @param description A named vector describing the rows you wish to delete.
+#' @examples 
+#' description <- c(ID = "111111111", date = as.Date("2015-05-21")) 
+#' deleteWhichRows("classParticipation", description) # Can enter 1 or 2 or "1 2" as prompted.
+#' description <- c(ID = "333333333", date = as.Date("2015-05-22"))
+#' deleteWhichRows("classParticipation", description # Can enter any combination of 1, 2, 3, and 4.
 
-
-# asCha <- c(T, F, F, T, T, T)
-#if (is.null(badRowsDF$date) == FALSE) badRowsDF$date <- as.numeric(badRowsDF$date)
-
-deleteWhichRows <- function(table, badRowsDF, columns, asCha) {
-      
-      # Cutting 'newDF' data.frame down to only those columns listed in 'columns'
-      badRowsDF <- badRowsDF[columns]
-      # Ensuring that appropriate columns are read as characters, not numerics.
-      badRowsDF[asCha] <- lapply(badRowsDF[asCha], as.character)
-      
-      # Ensuring that columns have names.
-      if (is.null(names(columns))) {
-            names(columns) <- columns
-      } else {
-            for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
-      }
-      
-      # Renaming columns of badRowsDF appropriately.
-      names(badRowsDF) <- names(columns)
-      
-      # Changing elements of columns to their names for simplicity.
-      columns <- names(columns)
+deleteWhichRows <- function(table, description) {
       
       # findsql, finding which rows match user's description.
-      t.columns <- paste("t.", columns[1], " = :", columns[1], sep = "")
-      for (i in columns[-1]) {
+      t.columns <- paste("t.", names(description)[1], " = :", names(description)[1], sep = "")
+      for (i in names(description)[-1]) {
             (t.columns <- paste(t.columns, " AND t.", i, " = :", i, sep = ""))
       }
       if (table == "students") {
@@ -158,26 +140,35 @@ deleteWhichRows <- function(table, badRowsDF, columns, asCha) {
       } else {
             print("Invalid table name.")
       }
-      findsql <- paste(selection, " AS t WHERE ", t.columns, sep = "")
+      usersql <- paste(selection, " AS t WHERE ", t.columns, sep = "")
+      hiddenRNsql <- paste("SELECT rowNumber from ", table, " AS t WHERE ", t.columns, sep = "")
       
-      # Finding rows described in badRowsDF.
-      query <- dbGetPreparedQuery(conn = DBconn(), findsql, bind.data = badRowsDF)      
+      # Creating df
+      df <- data.frame(t(description))
+      # Finding rows described.
+      conn = DBconn()
+      userSees <- dbGetPreparedQuery(conn, usersql, bind.data = df)
+      
       # If none found, return.
-      if (nrow(query) == 0) {
+      if (nrow(userSees) == 0) {
             print("No rows matching your description were found. ")
       } else {
             # If some found, show which, ask which row numbers should be deleted.
             print("We found the following records matching your description:")
-            print(query)
-            d <- readline("Which rows would you like to delete?  (Enter a non-numeric character for none.) ")
-            
+            print(userSees)
+            print("Which rows would you like to delete?")
+            d <- readline("(Enter row numbers separated by spaces; other inputs interpreted as 'none'.) \n")
+
             # Suppressing warnings while testing whether 'd' is numeric.
             storeWarn <- getOption("warn")
             options(warn = -1)
-            if (is.na(as.numeric(d))) {
+            if (is.na(as.integer(strsplit(d, " ")[[1]]))) {
                   print("I'm assuming that's 'None of the above'. ")
             } else {
-                  removeRow(table, d, conn = DBconn())
+                  d <- as.integer(strsplit(d, " ")[[1]])
+                  hiddenRN <- dbGetPreparedQuery(conn, hiddenRNsql, bind.data = df)
+                  rNumbers <- hiddenRN[d, ]
+                  removeRow(table, rNumbers)
             }
             # Resetting default warnings.
             options(warn = storeWarn)
