@@ -1,11 +1,11 @@
-rowNumber,ID,email,givenNames,lastName,program,notes
-1,111111111,banderso@uwo.ca,Bernard,Andersson,actuarial science,first entry
-2,222222222,dcarrend@uwo.ca,Domino,Carrender,actuarial science,first of two with same names
-3,333333333,dcarrend2@uwo.ca,Domino,Carrender,statistics,second of two with same names
-4,444444444,hgulman@uwo.ca,Heather,Gulman,statistics,
-5,555555555,jimhotep@uwo.ca,Jarl,Imhotep,statistics,
-6,666666666,lkhan@uwo.ca,Lorna,Khan,financial modelling,
-7,777777777,nmonty@uwo.ca,Neil,Monty,financial modelling,
-8,888888888,poklahom@uwo.ca,Pei,Oklahoma,actuarial science,
-9,999999999,,,,,correct answers
-10,123456789,tqohar@uwo.ca,Terrence,Qohar,financial modelling,
+rowNumber,del,ID,email,givenNames,lastName,program,notes
+1,FALSE,111111111,banderso@uwo.ca,Bernard,Andersson,actuarial science,first entry
+2,FALSE,222222222,dcarrend@uwo.ca,Domino,Carrender,actuarial science,first of two with same names
+3,FALSE,333333333,dcarrend2@uwo.ca,Domino,Carrender,statistics,second of two with same names
+4,FALSE,444444444,hgulman@uwo.ca,Heather,Gulman,statistics,
+5,FALSE,555555555,jimhotep@uwo.ca,Jarl,Imhotep,statistics,
+6,FALSE,666666666,lkhan@uwo.ca,Lorna,Khan,financial modelling,
+7,FALSE,777777777,nmonty@uwo.ca,Neil,Monty,financial modelling,
+8,FALSE,888888888,poklahom@uwo.ca,Pei,Oklahoma,actuarial science,
+9,FALSE,999999999,,,,,correct answers
+10,FALSE,123456789,tqohar@uwo.ca,Terrence,Qohar,financial modelling,
