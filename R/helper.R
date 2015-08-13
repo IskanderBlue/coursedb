@@ -96,17 +96,24 @@ nameSplitter <- function(dframe, namesColumn) {
 }
 
 
-#' Function to remove rows erroneously entered into database.
+#' Function to ghost or unghost rows erroneously entered into database.
+#' 
+#' Meant to be internal.  
 
 #' @param tableName A string, the name of the table to edit.
 #' @param rows A vector of rows to remove.
+#' @param delete A flag setting whether to delete or undelete.
 #' @param conn A connection to an SQL database.
 #' @examples
-#' removeRow("students", 2)
+#' ghostRow("students", 2)
 
-removeRow <- function(tableName, rows, conn = DBconn()) {
+ghostRow <- function(tableName, rows, delete, conn = DBconn()) {
       rows <- data.frame(rows = rows)
-      sql <- paste("DELETE FROM ", tableName, " WHERE rowNumber = :rows", sep = "")
+      if (delete == TRUE) {
+            sql <- paste("UPDATE ", tableName, " SET del = 1 WHERE rowNumber = :rows", sep = "")
+      } else {
+            sql <- paste("UPDATE ", tableName, " SET del = 0 WHERE rowNumber = :rows", sep = "")
+      }
       dbGetPreparedQuery(conn, statement = sql, bind.data = rows)      
 }
 
@@ -120,13 +127,21 @@ removeRow <- function(tableName, rows, conn = DBconn()) {
 #' description <- c(ID = "333333333", date = as.Date("2015-05-22"))
 #' deleteWhichRows("classParticipation", description) # Can enter any combination of 1, 2, 3, and 4.
 
-deleteWhichRows <- function(table, description) {
+deleteRows <- function(table, description, delete = TRUE) {
       
-      # findsql, finding which rows match user's description.
+      # Cobbling together SQL to find which rows match user's description.
+      # Putting user information into usersql, 
+      # row numbers matching rows into hiddenRNsql.
       t.columns <- paste("t.", names(description)[1], " = :", names(description)[1], sep = "")
       for (i in names(description)[-1]) {
             (t.columns <- paste(t.columns, " AND t.", i, " = :", i, sep = ""))
       }
+      if (delete == TRUE) {
+            t.columns <- paste(t.columns, "AND t.del = 0")
+      } else {
+            t.columns <- paste(t.columns, "AND t.del = 1")
+      }
+      
       if (table == "students") {
             selection <- "SELECT ID, email, givenNames, lastname, program, notes FROM students"
       } else if (table == "assignments") {
@@ -156,7 +171,11 @@ deleteWhichRows <- function(table, description) {
             # If some found, show which, ask which row numbers should be deleted.
             print("We found the following records matching your description:")
             print(userSees)
-            print("Which rows would you like to delete?")
+            if (delete == TRUE) {
+                  print("Which rows would you like to delete?")
+            } else {
+                  print("Which rows would you like to undelete?")
+            }
             d <- readline("(Enter row numbers separated by spaces; other inputs interpreted as 'none'.) \n")
 
             # Suppressing warnings while testing whether 'd' is numeric.
@@ -168,7 +187,7 @@ deleteWhichRows <- function(table, description) {
                   d <- as.integer(strsplit(d, " ")[[1]])
                   hiddenRN <- dbGetPreparedQuery(conn, hiddenRNsql, bind.data = df)
                   rNumbers <- hiddenRN[d, ]
-                  removeRow(table, rNumbers)
+                  ghostRow(table, rNumbers, delete)
             }
             # Resetting default warnings.
             options(warn = storeWarn)
