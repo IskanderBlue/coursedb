@@ -6,33 +6,47 @@ output: html_document
 ---
 
 ## A quick introduction on how to use the 'coursedb' package.  
-
+```{r, echo=FALSE}
+library(coursedb)
+```
 First, create an empty database.  
 ```
 createDB()
 ```
-For the purposes of this introduction, we will use a sample database.  
-If you'd like, you can create the same by running the following code; note that this overwrites any existing course.db you may already have created.  
-```{r}
-createDB(overwrite = TRUE, sample = TRUE)
-```
 Next, put some data in your database's tables.  
 We'll use `df` as the name of the data.frame and `columns` as the name of the vector specifying which of `df`'s columns are to be loaded into the table.  
 
-Note that if `df`'s  column names don't match up with the names of the columns in the database table (eg. the "assignments" table's column names are ID, date, grade, assignmentName), you will have to assign appropriate names to your data.frame's column names in `column`. 
+Note that if `df`'s  column names don't match up with the names of the columns in the database table (eg. the "assignments" table's column names are ID, date, grade, assignmentName), you will have to assign appropriate names in `column`. 
 
 For example, if your equivalent columns' names are "Student.Number_X", "Date", "Score", and "Assignment", you should use:
 ```
 columns <- c(ID = "Student.Number_X", date = "Date", grade = "Score", and assignmentName = "Assignment")
 UpdateAssignments(df, columns)
 ```
-After you put your data into the database, you can retrieve it using output functions:  
+R may assume certain columns of data of a type that they should not be.  For example, a column full of 9-digit student IDs may be read in as integers.  To correct this, there is an `asCha` parameter to most Update-() functions.  If your `columns` parameter specifies a column in your data.frame for each column in the table you are updating, the default `asCha` is appropriate.  If you are not specifying a data.frame column for each column in the database table, you may have to specify which columns should and should not be read in as characters.  See the function's help file for details.  
+
+The Update-() functions are:
+```
+UpdateStudents(df, columns)
+UpdateAssignments(df, columns, asCha)
+UpdateMCAnswers(df, columns, asCha) 
+UpdateLFGrades(df, columns, asCha) 
+```
+There is also a function to include class participation grades, `UpdateClassParticipation(df, columns, vitalColumns, asCha)`, and a generic function to update any table, `UpdateTable(table, df, columns, vitalColumns, asCha)`, but these are more complicated.  
+
+
+After you enter your data into the database, you can retrieve it using output functions:  
 ```
 readStudents()
 readAssignments()
 readMCAnswers()
 readLFGrades()
 readClassParticipation()
+```
+The following code chunks use a sample database included with the package.  
+If you'd like, you can create the same by running the following code; note that this overwrites any existing course.db you may already have created.  
+```
+createDB(overwrite = TRUE, sample = TRUE)
 ```
 You can see a student's test or assignment scores by using their student ID:
 ```
@@ -42,7 +56,7 @@ AssignmentMarks("111111111")
 
 To find a student's ID from their name, use: 
 ```
-NameToID("Given Names", "LastName")
+NameToID("Bernard", "Andersson")
 ```
 The package will also calculate a student's overall grade based on the information in the database.  You must specify how to weight the different categories of marks.  For example, to assign 20% of the grade to assignments, nothing to participation, 30% to (other) tests, and 50% to the student's last exam in the database, use `totalWeighting = c(0.2, 0, 0.3, 0.5)`.  
 ```
