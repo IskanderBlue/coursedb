@@ -57,14 +57,15 @@
 #' UpdateTable(table, lfDF, columns, vitalColumns, asCha) # Correct mistaken grade entries.
 
 #' table <- "classParticipation"
-#' cpDF <- data.frame(ID = c(993456888, 222222229, 222222229), date = rep(Sys.Date(), 3), attended = c(F, T, T), questionAnswered = c("", "Q3", ""), questionAsked = c("", "", "Why is option pricing so complicated?"), participationNotes = c("", "", "Came in late. Again.") ) 
+#' cpDF <- data.frame(ID = c(993456889, 222222229, 222222229), date = rep(Sys.Date(), 3), attended = c(F, T, T), questionAnswered = c("", "Q3", ""), questionAsked = c("", "", "Why is option pricing so complicated?"), participationNotes = c("", "", "Came in late. Again.") ) 
 #' columns <- c("ID", "date", "attended", "questionAnswered", "questionAsked", "participationNotes")
 #' vitalColumns <- c("ID", "date", "questionAnswered", "questionAsked", "participationNotes")
 #' asCha <- c(T, F, F, T, T, T)
 #' UpdateTable(table, cpDF, columns, vitalColumns, asCha) # Enters three new participation records.
 #' cpDF$attended <- c(T, T, T)
 #' UpdateTable(table, cpDF, columns, vitalColumns, asCha) # Amends attendance for 1st student.
-
+# names(cpDF) <- c("ayedee", "daate", "atnd", "qA", "qAsked", "pNotes")
+# columns <- c(ID = "ayedee", date = "daate", attended = "atnd", questionAnswered = "qA", questionAsked = "qAsked", participationNotes = "pNotes")
 UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, length(columns))) {
       
       # Cutting 'newDF' data.frame down to only those columns listed in 'columns'
@@ -84,18 +85,25 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
             for (i in 1:length(vitalColumns)) (if (names(vitalColumns)[i] == "") (names(vitalColumns)[i] <- vitalColumns[i]))
       }
       
+      # Renaming columns of newDF appropriately.
+      names(newDF) <- names(columns)
+      
+      # Changing elements of columns, vitalColumns to their names for simplicity.
+      columns <- names(columns)
+      vitalColumns <- names(vitalColumns)
+      
       # Cobbling the sql statements together from 'columns' and 'vitalColumns'.  
       
       # sql1
-      t.vitalVar <- paste("t.", names(vitalColumns)[1], " = :", names(vitalColumns)[1], sep = "")
-      for (i in names(vitalColumns)[-1]) {
+      t.vitalVar <- paste("t.", vitalColumns[1], " = :", vitalColumns[1], sep = "")
+      for (i in vitalColumns[-1]) {
             (t.vitalVar <- paste(t.vitalVar, " AND t.", i, " = :", i, sep = ""))
       }
       sql1 <- paste("SELECT * FROM ", table, " AS t WHERE ", t.vitalVar, sep = "")
       
       # ifsql
       specificInsert <- "rowNumber"
-      for (i in names(columns)) (specificInsert <- paste(specificInsert, i, sep = ", "))
+      for (i in columns) (specificInsert <- paste(specificInsert, i, sep = ", "))
       ifVarNames <- "rowNumber"
       for (i in columns) (ifVarNames <- paste(ifVarNames, ", :", i, sep = ""))
       ifsql <- paste("INSERT INTO ", table, " (", specificInsert, ") VALUES (:", ifVarNames, ")", sep = "")
@@ -107,10 +115,10 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
       storeWarn <- getOption("warn")
       options(warn = -1)
       
-      vitalVar <- paste(names(vitalColumns)[1], " = :", vitalColumns[1], sep = "")      
-      for (i in names(vitalColumns)[-1]) (vitalVar <- paste(vitalVar, " AND ", i, " = :", vitalColumns[[i]], sep = ""))
-      nonVitalVar <- paste(names(columns[columns != vitalColumns])[1], " = :", columns[columns != vitalColumns][1], sep = "")
-      for (i in names(columns[columns != vitalColumns])[-1]) (nonVitalVar <- paste(nonVitalVar, ", ", i, " = :", columns[[i]], sep = ""))
+      vitalVar <- paste(vitalColumns[1], " = :", vitalColumns[1], sep = "")      
+      for (i in vitalColumns[-1]) (vitalVar <- paste(vitalVar, " AND ", i, " = :", i, sep = ""))
+      nonVitalVar <- paste(columns[columns != vitalColumns][1], " = :", columns[columns != vitalColumns][1], sep = "")
+      for (i in columns[columns != vitalColumns][-1]) (nonVitalVar <- paste(nonVitalVar, ", ", i, " = :", i, sep = ""))
       elsesql <- paste("UPDATE ", table, " SET ", nonVitalVar, " WHERE ", vitalVar, sep = "")
       
       # Resetting default warnings.
@@ -120,14 +128,27 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
       maxsql <- paste("SELECT MAX(rowNumber) FROM ", table, sep = "")
       nextRow <- dbGetQuery(conn = DBconn(), maxsql)[[1]]
       if (is.na(nextRow)) (nextRow <- 0)
+      nextRow <- nextRow + 1
+      
+      # Setting up counter (counts how many rows are updated as opposed to created).
+      updateCounter <- 0
       
       # Loop through variables, calling rowUpdater() to update each 
-      # database row appropriately.
+      # database row as well as nextRow and updateCounter appropriately.
       for (i in 1:nrow(newDF)) {
             df <- newDF[i, ]
-            nextRow <- nextRow + 1
             df$rowNumber <- nextRow
-            rowUpdater(df, sql1, ifsql, elsesql)
+            # rowUpdater() returns 1 if new row was made, 0 if existing row was updated.
+            newRow <- rowUpdater(df, sql1, ifsql, elsesql, updateCounter)
+            nextRow <- nextRow + newRow
+            updateCounter <- updateCounter + (1 - newRow)
+      }
+      
+      # Notify user that they have overwritten existing rows.
+      if (updateCounter == 1) {
+            print(paste("You have overwritten 1 existing row in the", table, "table."))
+      } else if (updateCounter > 1) {
+            print(paste("You have overwritten", updateCounter, "existing rows in the", table, "table."))
       }
 }
 
@@ -297,5 +318,5 @@ UpdateLFGrades <- function(newLFDataFrame, columns = c("ID", "date", "grade", "q
 #' UpdateClassParticipation(cpDF) # Amends attendance for 1st student.
 
 UpdateClassParticipation <- function(newCPDataFrame, columns = c("ID", "date", "attended", "questionAnswered", "questionAsked", "participationNotes"), vitalColmns = c("ID", "date", "questionAnswered", "questionAsked", "participationNotes"), asCha = c(T, F, F, T, T, T)) {
-      UpdateTable(table = "longformGrades", newDF = newCPDataFrame, columns = columns, vitalColumns = vitalColumns, asCha = asCha)
+      UpdateTable(table = "classParticipation", newDF = newCPDataFrame, columns = columns, vitalColumns = vitalColumns, asCha = asCha)
 }
