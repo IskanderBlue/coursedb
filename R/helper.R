@@ -118,7 +118,7 @@ removeRow <- function(tableName, rows, conn = DBconn()) {
 #' description <- c(ID = "111111111", date = as.Date("2015-05-21")) 
 #' deleteWhichRows("classParticipation", description) # Can enter 1 or 2 or "1 2" as prompted.
 #' description <- c(ID = "333333333", date = as.Date("2015-05-22"))
-#' deleteWhichRows("classParticipation", description # Can enter any combination of 1, 2, 3, and 4.
+#' deleteWhichRows("classParticipation", description) # Can enter any combination of 1, 2, 3, and 4.
 
 deleteWhichRows <- function(table, description) {
       
