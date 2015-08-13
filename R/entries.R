@@ -98,12 +98,12 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
       for (i in vitalColumns[-1]) {
             (t.vitalVar <- paste(t.vitalVar, " AND t.", i, " = :", i, sep = ""))
       }
-      sql1 <- paste("SELECT * FROM ", table, " AS t WHERE ", t.vitalVar, sep = "")
+      sql1 <- paste("SELECT * FROM ", table, " AS t WHERE ", t.vitalVar, " AND t.del = 0", sep = "")
       
       # ifsql
-      specificInsert <- "rowNumber"
+      specificInsert <- "rowNumber, del"
       for (i in columns) (specificInsert <- paste(specificInsert, i, sep = ", "))
-      ifVarNames <- "rowNumber"
+      ifVarNames <- "rowNumber, 0"
       for (i in columns) (ifVarNames <- paste(ifVarNames, ", :", i, sep = ""))
       ifsql <- paste("INSERT INTO ", table, " (", specificInsert, ") VALUES (:", ifVarNames, ")", sep = "")
       

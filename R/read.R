@@ -32,17 +32,22 @@ listTables <- function(conn = DBconn()) {
 }
 
 #' @rdname basicOutputs
+trueTable <- function(table, conn = DBconn()) {
+      dbGetQuery(conn, paste("SELECT * FROM", table))
+}
+
+#' @rdname basicOutputs
 showTable <- function(table, conn = DBconn()) {
       if (table == "students") {
-            dbGetQuery(conn, "SELECT ID, email, givenNames, lastname, program, notes FROM students")
+            dbGetQuery(conn, "SELECT ID, email, givenNames, lastname, program, notes FROM students AS t WHERE t.del = 0")
       } else if (table == "assignments") {
-            dbGetQuery(conn, "SELECT ID, date, grade, assignmentName FROM assignments")
+            dbGetQuery(conn, "SELECT ID, date, grade, assignmentName FROM assignments AS t WHERE t.del = 0")
       } else if (table == "mcAnswers") {
-            dbGetQuery(conn, "SELECT ID, date, answer, questionName, questionValue, examName, examCode FROM mcAnswers")
+            dbGetQuery(conn, "SELECT ID, date, answer, questionName, questionValue, examName, examCode FROM mcAnswers AS t WHERE t.del = 0")
       } else if (table == "longformGrades") {
-            dbGetQuery(conn, "SELECT ID, date, grade, questionName, examName, examCode FROM longformGrades")
+            dbGetQuery(conn, "SELECT ID, date, grade, questionName, examName, examCode FROM longformGrades AS t WHERE t.del = 0")
       } else if (table == "classParticipation") {
-            dbGetQuery(conn, "SELECT ID, date, attended, questionAnswered, questionAsked, participationNotes FROM classParticipation")
+            dbGetQuery(conn, "SELECT ID, date, attended, questionAnswered, questionAsked, participationNotes FROM classParticipation AS t WHERE t.del = 0")
       } else {
             print("Invalid table name.")
       }
@@ -50,27 +55,27 @@ showTable <- function(table, conn = DBconn()) {
 
 #' @rdname basicOutputs
 readStudents <- function(conn = DBconn()) {
-      dbGetQuery(conn, "SELECT ID, email, givenNames, lastname, program, notes FROM students")
+      dbGetQuery(conn, "SELECT ID, email, givenNames, lastname, program, notes FROM students AS t WHERE t.del = 0")
 }
 
 #' @rdname basicOutputs
 readAssignments <- function(conn = DBconn()) {
-      dbGetQuery(conn, "SELECT ID, date, grade, assignmentName FROM assignments")
+      dbGetQuery(conn, "SELECT ID, date, grade, assignmentName FROM assignments AS t WHERE t.del = 0")
 }
 
 #' @rdname basicOutputs
 readMCAnswers <- function(conn = DBconn()) {
-      dbGetQuery(conn, "SELECT ID, date, answer, questionName, questionValue, examName, examCode FROM mcAnswers")
+      dbGetQuery(conn, "SELECT ID, date, answer, questionName, questionValue, examName, examCode FROM mcAnswers AS t WHERE t.del = 0")
 }
 
 #' @rdname basicOutputs
 readLFGrades <- function(conn = DBconn()) {
-      dbGetQuery(conn, "SELECT ID, date, grade, questionName, examName, examCode FROM longformGrades")
+      dbGetQuery(conn, "SELECT ID, date, grade, questionName, examName, examCode FROM longformGrades AS t WHERE t.del = 0")
 }
 
 #' @rdname basicOutputs
 readClassParticipation <- function(conn = DBconn()) {
-      dbGetQuery(conn, "SELECT ID, date, attended, questionAnswered, questionAsked, participationNotes FROM classParticipation")
+      dbGetQuery(conn, "SELECT ID, date, attended, questionAnswered, questionAsked, participationNotes FROM classParticipation AS t WHERE t.del = 0")
 }
 
 #' @rdname basicOutputs
@@ -101,7 +106,7 @@ readAllInfo <- function(conn = DBconn()) {
 NameToID <- function(givenNames, lastName) {
       IDs <- dbGetQuery(conn = DBconn(), 
                         "SELECT ID, lastName, givenNames 
-                               FROM students")
+                               FROM students AS t WHERE t.del = 0")
       givenMatch <- agrep(givenNames, IDs$givenNames)
       lastMatch <- agrep(lastName, IDs$lastName)
       matchingIDs <- IDs[intersect(givenMatch, lastMatch),]
@@ -133,14 +138,16 @@ IDAndExamNameToGrade <- function(ID, examName) {
                               "SELECT answer, questionName, questionValue, examCode 
                                     FROM mcAnswers AS m 
                                     WHERE m.ID = :ID 
-                                    AND m.examName = :examName",
+                                    AND m.examName = :examName
+                                    AND m.del = 0",
                               bind.data = df)
       if (length(unique(a$examCode)) > 1) {warning("Exam code not unique.")}      
       g <- dbGetPreparedQuery(conn = DBconn(),
                               "SELECT grade, questionName, examCode 
                                     FROM longformGrades AS l 
                                     WHERE l.ID = :ID 
-                                    AND l.examName = :examName",
+                                    AND l.examName = :examName
+                                    AND l.del = 0",
                               bind.data = df)
       if (length(unique(g$examCode)) > 1) {warning("Exam code not unique.")}
       # 2     compare answers to correct answers, grades to total grades
@@ -150,14 +157,16 @@ IDAndExamNameToGrade <- function(ID, examName) {
                                     FROM mcAnswers AS m 
                                     WHERE m.ID = 999999999 
                                     AND m.examName = :examName 
-                                    AND m.examCode = :examCode",
+                                    AND m.examCode = :examCode
+                                    AND m.del = 0",
                                bind.data = df)
       tg <- dbGetPreparedQuery(conn = DBconn(),
                                "SELECT grade, questionName 
                                     FROM longformGrades AS l 
                                     WHERE l.ID = 999999999 
                                     AND l.examName = :examName 
-                                    AND l.examCode = :examCode",
+                                    AND l.examCode = :examCode
+                                    AND l.del = 0",
                                bind.data = df)
       # 3     tally total mark on test
       total <- (sum(as.integer(a$questionValue[a$questionName == ca$questionName 
@@ -184,7 +193,8 @@ IDAndExamNameToGrade <- function(ID, examName) {
 #'    \item The student's score as a fraction of the full score.  
 #' }
 #' @seealso \code{\link{IDAndExamNameToGrade}}
-#' @examples IDToAssignmentMark(555555555, "2")
+#' @examples 
+#' IDToAssignmentMark("555555555", "2")
 IDToAssignmentMark <- function(ID, assignmentName) {
       # 1   Match ID and assignmentName to score (from assignments table)
       #     and get full score for assignment
@@ -193,8 +203,10 @@ IDToAssignmentMark <- function(ID, assignmentName) {
                               "SELECT grade, ID FROM assignments AS a 
                                     WHERE a.ID = :ID 
                                     AND a.assignmentName = :assignmentName
+                                    AND a.del = 0
                                     OR a.ID = 999999999
-                                    AND a.assignmentName = :assignmentName",
+                                    AND a.assignmentName = :assignmentName
+                                    AND a.del = 0",
                               bind.data = df)
       if (length(unique(a$assignmentName)) > 2) {stop("Assignment name not unique.")}
       # 2   Return vector: mark, fraction
@@ -233,7 +245,8 @@ IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate") {
       c <- dbGetPreparedQuery(conn = DBconn(), 
                               "SELECT date, attended 
                               FROM classParticipation AS c
-                              WHERE c.ID = :ID",
+                              WHERE c.ID = :ID
+                              AND c.del = 0",
                               bind.data = ID)
       attendedSoFar <- length(na.omit(unique(c$date[c$attended == TRUE]))) # Number of dates attended to date
       evalMethod <- checkNumeric(attendanceMethod)
@@ -292,7 +305,8 @@ IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
       c <- dbGetPreparedQuery(conn = DBconn(), 
                               "SELECT date, questionAsked
                               FROM classParticipation AS c
-                              WHERE c.ID = :ID",
+                              WHERE c.ID = :ID
+                              AND c.del = 0",
                               bind.data = ID)
       qs <- sum(c$questionAsked[c$date <= date] != "")
       evalMethod <- checkNumeric(evalMethod)
@@ -304,6 +318,7 @@ IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
             allQs <- dbGetQuery(conn = DBconn(),
                                 "SELECT ID, questionAsked 
                                 FROM classParticipation as c
+                                WHERE c.del = 0
                                 ORDER BY c.ID")
             potentialQs <- qs
             for (i in unique(allQs$ID)) {
@@ -357,7 +372,8 @@ IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "fraction"
       c <- dbGetPreparedQuery(conn = DBconn(), 
                               "SELECT date, questionAnswered
                               FROM classParticipation AS c
-                              WHERE c.ID = :ID",
+                              WHERE c.ID = :ID
+                              AND c.del = 0",
                               bind.data = ID)
       qs <- sum(c$questionAnswered[c$date <= date] != "")
       evalMethod <- checkNumeric(evalMethod)
@@ -369,6 +385,7 @@ IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "fraction"
             allQs <- dbGetQuery(conn = DBconn(),
                                 "SELECT ID, questionAnswered 
                                 FROM classParticipation as c
+                                WHERE c.del = 0
                                 ORDER BY c.ID")
             potentialQs <- qs
             for (i in unique(allQs$ID)) {
@@ -423,7 +440,8 @@ IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "fraction"
       c <- dbGetPreparedQuery(conn = DBconn(), 
                               "SELECT date, questionAnswered, questionAsked
                               FROM classParticipation AS c
-                              WHERE c.ID = :ID",
+                              WHERE c.ID = :ID
+                              AND c.del = 0",
                               bind.data = ID)
       qs <- sum(c$questionAsked[c$date <= date] != "") + sum(c$questionAnswered[c$date <= date] != "")
       evalMethod <- checkNumeric(evalMethod)
@@ -435,6 +453,7 @@ IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "fraction"
             allQs <- dbGetQuery(conn = DBconn(),
                                 "SELECT ID, questionAnswered, questionAsked
                                 FROM classParticipation as c
+                                WHERE c.del = 0
                                 ORDER BY c.ID")
             potentialQs <- qs
             for (i in unique(allQs$ID)) {
@@ -528,10 +547,11 @@ IDToClassParticipation <- function(ID, date = Sys.Date(), cpWeighting = c(0.5,0.
 #' }
 #' @seealso \code{\link{IDToAssignmentMark}}
 #' @seealso \code{\link{TestMarks}}
-#' @examples AssignmentMarks(111111111)
+#' @examples 
+#' AssignmentMarks("111111111")
 AssignmentMarks <- function(ID, date = Sys.Date()) {
       a <- readAssignments()
-      uniqueA <- unique(a$assignmentNumber[a$date <= date])
+      uniqueA <- unique(a$assignmentName[a$date <= date])
       aMarks <- matrix(ncol = 3, nrow = length(uniqueA))
       colnames(aMarks) = c("mark", "outOf", "fraction")
       rownames(aMarks) = uniqueA
@@ -544,7 +564,7 @@ AssignmentMarks <- function(ID, date = Sys.Date()) {
 
 #' Get a student's marks on tests.    
 #' 
-#' Enter a student's ID and date.  Function uses \code{\link{IDAndExamNumberToGrade}}.  
+#' Enter a student's ID and date.  Function uses \code{\link{IDAndExamNameToGrade}}.  
 #' Returns a matrix of a student's marks on tests up to that date.  
 #' 
 #' @param ID A student's ID number (should be a 9 digit integer).
@@ -555,18 +575,19 @@ AssignmentMarks <- function(ID, date = Sys.Date()) {
 #'    \item The full potential marks.
 #'    \item The student's marks as fractions of the full marks.  
 #' }
-#' @seealso \code{\link{IDAndExamNumberToGrade}}
+#' @seealso \code{\link{IDAndExamNameToGrade}}
 #' @seealso \code{\link{AssignmentMarks}}
-#' @examples TestMarks(111111111)
+#' @examples 
+#' TestMarks("111111111")
 TestMarks <- function(ID, date = Sys.Date()) {
       allMC <- readMCAnswers()
       allLF <- readLFGrades()
-      uniqueT <- unique(c(unique(allMC$examNumber[allMC$date <= date])), unique(allLF$examNumber[allLF$date <= date]))
+      uniqueT <- unique(c(unique(allMC$examName[allMC$date <= date])), unique(allLF$examName[allLF$date <= date]))
       tMarks <- matrix(ncol = 3, nrow = length(uniqueT))
       colnames(tMarks) = c("mark", "outOf", "fraction")
       rownames(tMarks) = uniqueT
       for (i in uniqueT) {
-            tMarks[i, ] <- IDAndExamNumberToGrade(ID, i)
+            tMarks[i, ] <- IDAndExamNameToGrade(ID, i)
       }
       for (i in nrow(tMarks):1) {
             if (is.na(tMarks[i,2]) || tMarks[i,2] == 0) {
@@ -654,6 +675,6 @@ IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting 
 IDToNotes <- function(ID) {
       df <- as.data.frame(ID)     
       dbGetPreparedQuery(conn = DBconn(), 
-                         "SELECT notes FROM students AS s WHERE s.ID = :ID", 
+                         "SELECT notes FROM students AS s WHERE s.ID = :ID AND s.del = 0", 
                          bind.data = df)
 }
