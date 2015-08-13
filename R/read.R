@@ -33,7 +33,19 @@ listTables <- function(conn = DBconn()) {
 
 #' @rdname basicOutputs
 showTable <- function(table, conn = DBconn()) {
-      dbGetQuery(conn, paste("SELECT * FROM", table))
+      if (table == "students") {
+            dbGetQuery(conn, "SELECT ID, email, givenNames, lastname, program, notes FROM students")
+      } else if (table == "assignments") {
+            dbGetQuery(conn, "SELECT ID, date, grade, assignmentName FROM assignments")
+      } else if (table == "mcAnswers") {
+            dbGetQuery(conn, "SELECT ID, date, answer, questionName, questionValue, examName, examCode FROM mcAnswers")
+      } else if (table == "longformGrades") {
+            dbGetQuery(conn, "SELECT ID, date, grade, questionName, examName, examCode FROM longformGrades")
+      } else if (table == "classParticipation") {
+            dbGetQuery(conn, "SELECT ID, date, attended, questionAnswered, questionAsked, participationNotes FROM classParticipation")
+      } else {
+            print("Invalid table name.")
+      }
 }
 
 #' @rdname basicOutputs

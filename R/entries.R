@@ -64,8 +64,7 @@
 #' UpdateTable(table, cpDF, columns, vitalColumns, asCha) # Enters three new participation records.
 #' cpDF$attended <- c(T, T, T)
 #' UpdateTable(table, cpDF, columns, vitalColumns, asCha) # Amends attendance for 1st student.
-# names(cpDF) <- c("ayedee", "daate", "atnd", "qA", "qAsked", "pNotes")
-# columns <- c(ID = "ayedee", date = "daate", attended = "atnd", questionAnswered = "qA", questionAsked = "qAsked", participationNotes = "pNotes")
+
 UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, length(columns))) {
       
       # Cutting 'newDF' data.frame down to only those columns listed in 'columns'
