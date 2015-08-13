@@ -143,3 +143,29 @@ August 11th 2015
 
 /Add more flexibility to column names in entries.R functions.
 /Function that seperates names into givenNames and lastName.
+
+/Ran into bug with old TestMarks() function while trying to write QuickIntro; fix today.
+
+/Rename column names to names that will surely work with SQL -- don't include \., \_.
+/Clean up input initially -- want nice, easy to understand form.
+/Be flexible in initial allowable input -- but then make it inflexible very very soon.
+/Outside world is a mess, inside world is nice and predictable.
+
+/Replace row deletion with row ghosting -- marked as deleted, but undoable.
+/How to structure the deletions?
+      Eg. delete records ID > 3, 2506 < ID  < 2510, etc.
+      Check which records meet requirements
+      Ask whether to delete, then mark as deleted if confirmed.
+
+/add feature:  Just so you know, you just updated a row in "students"
+
+*****
+August 13th 2015
+
+Saying ID < 123456789 is diffucult; stored as characters.  Same for most values.  Dates different.  Implement?
+
+ghostRow()
+deleteRow()
+Better names?
+
+Why, when I compile the QuickIntro, does it not act like I've built coursedb?
