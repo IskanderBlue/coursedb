@@ -175,7 +175,7 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
 #' }
 #' @param columns A vector containing the names of the columns you wish to include.  Set names(columns) to the appropriate database column names.  eg. c(ID = "student.ID", email = "student.email", ...).
 #' @examples
-#' sDF <- data.frame(ID = c("asd", 222222229, 122222229), email = c(NA, "222semail@@address.com", "abcd@@email.com"), lastName = c("Abelard", "Semekovic", "Kovacs"), givenNames = c("Eugene", "Juliana", "Takeshi"), program = c("statistics", "financial modelling", ""), notes = c("", "", "Terrifying.") ) 
+#' sDF <- data.frame(ID = c("", 222222229, 122222229), email = c(NA, "222semail@@address.com", "abcd@@email.com"), lastName = c("Abelard", "Semekovic", "Kovacs"), givenNames = c("Eugene", "Juliana", "Takeshi"), program = c("statistics", "financial modelling", ""), notes = c("", "", "Terrifying.") ) 
 #' UpdateStudents(sDF) # Adds three lines to the students table.
 #' sDF$email <- c(NA, "amended.email@@address.com", "abcd@@email.com") 
 #' sDF$notes <- c("", "Amended line.", "Terrifying.") 
@@ -190,6 +190,13 @@ UpdateStudents <- function(newStudentDataFrame, columns = c("ID", "email", "give
       }
       
       UpdateTable(table = "students", newDF = newStudentDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]]), asCha = rep(T, length(columns)))
+      rsID <- readStudents()$ID[]
+      badIDs <- sum(is.na(rsID), is.null(rsID), grepl("^$", rsID))# Is is.null appropriate?
+      if (sum(badIDs) == 1) {
+            print("It seems that 1 ID was not read in correctly.")
+      } else if (sum(badIDs) > 1) {
+            print(paste("It seems that", badIDs, "IDs were not read in correctly."))
+      }
 }
 
 
