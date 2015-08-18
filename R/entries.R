@@ -182,6 +182,13 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
 #' UpdateStudents(sDF) # Amends student 222222229's entry.
 
 UpdateStudents <- function(newStudentDataFrame, columns = c("ID", "email", "givenNames", "lastName", "program", "notes")) {
+      # Ensuring that columns has names.
+      if (is.null(names(columns))) {
+            names(columns) <- columns
+      } else {
+            for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
+      }
+      
       UpdateTable(table = "students", newDF = newStudentDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]]), asCha = rep(T, length(columns)))
 }
 
@@ -209,6 +216,14 @@ UpdateStudents <- function(newStudentDataFrame, columns = c("ID", "email", "give
 #' UpdateAssignments(aDF) # Reduces grade in last entry from 10 to 9.
 
 UpdateAssignments <- function(newAssignmentDataFrame, columns = c("ID", "date", "grade", "assignmentName"), asCha = c(T, F, F, T)) {
+      
+      # Ensuring that columns has names.
+      if (is.null(names(columns))) {
+            names(columns) <- columns
+      } else {
+            for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
+      }
+      
       UpdateTable(table = "assignments", newDF = newAssignmentDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], assignmentName = columns[["assignmentName"]]), asCha = asCha)
 }
 
@@ -242,6 +257,14 @@ UpdateAssignments <- function(newAssignmentDataFrame, columns = c("ID", "date", 
 #' UpdateMCAnswers(mcDF) # Amend the question values from c(1, 1, 1) to c(2, 2, 1).
 
 UpdateMCAnswers <- function(newMCDataFrame, columns = c("ID", "date", "answer", "questionName", "questionValue", "examName", "examCode"), asCha = c(T, F, T, T, F, T, T)) {
+      
+      # Ensuring that columns has names.
+      if (is.null(names(columns))) {
+            names(columns) <- columns
+      } else {
+            for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
+      }
+      
       UpdateTable(table = "mcAnswers", newDF = newMCDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], questionName = columns[["questionName"]], examName = columns[["examName"]]), asCha = asCha)
 }
 
@@ -281,6 +304,14 @@ UpdateMCAnswers <- function(newMCDataFrame, columns = c("ID", "date", "answer", 
 #' UpdateLFGrades(lfDF) # Correct mistaken grade entries.
 
 UpdateLFGrades <- function(newLFDataFrame, columns = c("ID", "date", "grade", "questionName", "examName", "examCode"), asCha = c(T, F, F, T, T, T)) {
+      
+      # Ensuring that columns has names.
+      if (is.null(names(columns))) {
+            names(columns) <- columns
+      } else {
+            for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
+      }
+      
       UpdateTable(table = "longformGrades", newDF = newLFDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], questionName = columns[["questionName"]], examName = columns[["examName"]]), asCha = asCha)
 }
 
@@ -317,5 +348,18 @@ UpdateLFGrades <- function(newLFDataFrame, columns = c("ID", "date", "grade", "q
 #' UpdateClassParticipation(cpDF) # Amends attendance for 1st student.
 
 UpdateClassParticipation <- function(newCPDataFrame, columns = c("ID", "date", "attended", "questionAnswered", "questionAsked", "participationNotes"), vitalColmns = c("ID", "date", "questionAnswered", "questionAsked", "participationNotes"), asCha = c(T, F, F, T, T, T)) {
+      
+      # Ensuring that columns and vitalColumns have names.
+      if (is.null(names(columns))) {
+            names(columns) <- columns
+      } else {
+            for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
+      }
+      if (is.null(names(vitalColumns))) {
+            names(vitalColumns) <- vitalColumns
+      } else {
+            for (i in 1:length(vitalColumns)) (if (names(vitalColumns)[i] == "") (names(vitalColumns)[i] <- vitalColumns[i]))
+      }
+      
       UpdateTable(table = "classParticipation", newDF = newCPDataFrame, columns = columns, vitalColumns = vitalColumns, asCha = asCha)
 }
