@@ -162,10 +162,45 @@ August 11th 2015
 *****
 August 13th 2015
 
-Saying ID < 123456789 is diffucult; stored as characters.  Same for most values.  Dates different.  Implement?
+Saying ID < 123456789 is diffucult; stored as characters.  Same for most values.  Dates different.  Implement? See below
 
-ghostRow()
-deleteRow()
-Better names?
+/ghostRow()
+/deleteRow()
+/Better names?
 
-Why, when I compile the QuickIntro, does it not act like I've built coursedb?
+/Why, when I compile the QuickIntro, does it not act like I've built coursedb?
+/No replicability
+
+/out of bounds error: columns[["assignmentNames"]]
+/Doesn't have a name yet as input to UpdateTable()
+/Give them columns, vitalColumns names beofe calling UpdateTable()
+
+/want an error message if a student doesn't have an ID.
+
+/function: show me what you know about so-and-so.
+
+**/Want better way to display data. # sort of done?  For assignments and students as a whole
+
+Can attach a class to output of a function
+class(result) <- c("assignmentData", class(result))
+Use reshape or plyr to reshape the data into... wide format
+?reshape
+There is a fix() function!
+
+
+random errors --> probably a scoping problem -- two variables, usually the same but not always; when not, problems.
+
+more notes for deleting
+
+delete(~ID>3)  <-- not evaluated yet, evaluated later in proper context. 
+Give vector of trues, fales, identifying who gets deleted -- or, give a formula identifying who gets deleted.  Starts with a ~, then columns of table
+x <- 10
+fla <- ~ grade < x
+env <- list2env(df, parent = environment(fla))
+eval(fla[[2]], envir = env)
+If it doesn't find x in that environment, it'll look in the parent.  Environment of the forumula --> context where it was defined.
+"User can write an expression that selects... individuals... another delete selection."
+
+*****
+August 18th 2015
+Is is.null appropriate in UpdateStudents()?
