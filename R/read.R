@@ -88,6 +88,16 @@ readAllInfo <- function(conn = DBconn()) {
       return(c(a,b,c,d,e))
 }
 
+#' Like readAssignments(), but more legiblle
+#' 
+#' @param conn A connection to a database.
+showAssignments <- function(conn = DBconn()) {
+      a <- dbGetQuery(conn, "SELECT ID, date, grade, assignmentName FROM assignments AS t WHERE t.del = 0")
+      a$date <- as.Date(a$date, origin = "1970-01-01")
+      wide <- reshape(a, direction = "wide", timevar = "assignmentName", idvar = "ID")
+      return(wide)
+}
+
 ## Name variants!!! LIKE in SQL?
 ## phonetic matching somehow?
 
@@ -677,4 +687,22 @@ IDToNotes <- function(ID) {
       dbGetPreparedQuery(conn = DBconn(), 
                          "SELECT notes FROM students AS s WHERE s.ID = :ID AND s.del = 0", 
                          bind.data = df)
+}
+
+#' Show all relevant data on a student.
+#' 
+#' @param ID A student ID, the only necessary parameter.
+#' @param date A date object; if altered from default, will only return information up until that date.
+#' @param totalWeighting,cpWeighting,attendanceMethod,questionMethod See \code{\link{IDToCurrentGrade}}
+#' @return A list with outputs from AssignmentMarks(), TestMarks(), IDToNotes(), and (if testWeighting is given) IDToCurrentGrade().
+showStudent <- function(ID, date = Sys.Date(), totalWeighting = NULL, cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction")) {
+      Assignments <- AssignmentMarks(ID, date)
+      Tests <- TestMarks(ID, date)
+      Notes <- IDToNotes(ID)
+      result <- list(Assignments = Assignments, Tests = Tests, Notes = Notes)
+      if (is.null(totalWeighting) == FALSE) {
+            Current.Grade <- IDToCurrentGrade(ID, totalWeighting, date, cpWeighting, attendanceMethod, questionMethod)
+            result <- list(Assignments = Assignments, Tests = Tests, Current.Grade = Current.Grade, Notes = Notes)
+      }
+      return(result)
 }
