@@ -45,20 +45,20 @@ readClassParticipation()
 ```
 The following code chunks use a sample database included with the package.  
 If you'd like, you can create the same by running the following code; note that this overwrites any existing course.db you may already have created.  
-```
+```{r}
 createDB(overwrite = TRUE, sample = TRUE)
 ```
 You can see a student's test or assignment scores by using their student ID:
-```
+```{r}
 TestMarks("111111111")
 AssignmentMarks("111111111")
 ```
 
 To find a student's ID from their name, use: 
-```
+```{r}
 NameToID("Bernard", "Andersson")
 ```
 The package will also calculate a student's overall grade based on the information in the database.  You must specify how to weight the different categories of marks.  For example, to assign 20% of the grade to assignments, nothing to participation, 30% to (other) tests, and 50% to the student's last exam in the database, use `totalWeighting = c(0.2, 0, 0.3, 0.5)`.  
-```
+```{r}
 IDToCurrentGrade("111111111", c(.2, 0, .3, .5))
 ```
