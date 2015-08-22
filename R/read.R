@@ -715,6 +715,7 @@ IDToName <- function(ID) {
 #' @return A list with outputs from IDToName(), AssignmentMarks(), TestMarks(), IDToNotes(), and (if testWeighting is given) IDToCurrentGrade().
 showStudent <- function(ID, date = Sys.Date(), totalWeighting = NULL, cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction")) {
       Name <- IDToName(ID)
+      Name <- paste(Name[1], Name[2])
       Assignments <- AssignmentMarks(ID, date)
       Tests <- TestMarks(ID, date)
       Notes <- IDToNotes(ID)
@@ -723,5 +724,6 @@ showStudent <- function(ID, date = Sys.Date(), totalWeighting = NULL, cpWeightin
             Current.Grade <- IDToCurrentGrade(ID, totalWeighting, date, cpWeighting, attendanceMethod, questionMethod)
             result <- list(Name = Name, Assignments = Assignments, Tests = Tests, Current.Grade = Current.Grade, Notes = Notes)
       }
+      class(result) <- c("studentInfo", class(result))
       return(result)
 }
