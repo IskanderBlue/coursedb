@@ -162,7 +162,7 @@ August 11th 2015
 *****
 August 13th 2015
 
-Saying ID < 123456789 is diffucult; stored as characters.  Same for most values.  Dates different.  Implement? See below
+/Saying ID < 123456789 is diffucult; stored as characters.  Same for most values.  Dates /different.  Implement? See below
 
 /ghostRow()
 /deleteRow()
@@ -181,26 +181,44 @@ Saying ID < 123456789 is diffucult; stored as characters.  Same for most values.
 
 **/Want better way to display data. # sort of done?  For assignments and students as a whole
 
-Can attach a class to output of a function
-class(result) <- c("assignmentData", class(result))
-Use reshape or plyr to reshape the data into... wide format
-?reshape
+/Can attach a class to output of a function
+/class(result) <- c("assignmentData", class(result))
+/Use reshape or plyr to reshape the data into... wide format
+
 There is a fix() function!
 
 
 random errors --> probably a scoping problem -- two variables, usually the same but not always; when not, problems.
 
-more notes for deleting
+/more notes for deleting
 
-delete(~ID>3)  <-- not evaluated yet, evaluated later in proper context. 
-Give vector of trues, fales, identifying who gets deleted -- or, give a formula identifying who gets deleted.  Starts with a ~, then columns of table
-x <- 10
-fla <- ~ grade < x
-env <- list2env(df, parent = environment(fla))
-eval(fla[[2]], envir = env)
-If it doesn't find x in that environment, it'll look in the parent.  Environment of the forumula --> context where it was defined.
-"User can write an expression that selects... individuals... another delete selection."
-
+/delete(~ID>3)  <-- not evaluated yet, evaluated later in proper context. 
+/Give vector of trues, falses, identifying who gets deleted -- or, give a formula identifying /who gets deleted.  Starts with a ~, then columns of table
+/x <- 10
+/fla <- ~ grade < x
+/env <- list2env(df, parent = environment(fla))
+/eval(fla[[2]], envir = env)
+/If it doesn't find x in that environment, it'll look in the parent.  Environment of the /forumula --> context where it was defined.
+/"User can write an expression that selects... individuals... another delete selection."
+/     Note: environments for evaluating formula.
 *****
 August 18th 2015
-Is is.null appropriate in UpdateStudents()?
+
+Make functions work without inputs (ie. empty tables?)
+/showStudents include name, email
+/Use class, print method
+/Call class studentInfo, print.studentInfo method
+
+showtest : per test: specify student, test
+      reformat processed 
+      mostly want to know right or wrong
+            sometimes actual answers
+how did class do overall?
+      score for every student
+      answer for every question for every student?
+read scores on each question
+      input identifies test
+            one line per student, how they did on each question on test
+            students are rows, questions are columns
+            add class to result, printmethod for class
+            mod dataframe to add student, print
