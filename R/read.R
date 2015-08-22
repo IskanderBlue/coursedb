@@ -599,14 +599,13 @@ TestMarks <- function(ID, date = Sys.Date()) {
       for (i in uniqueT) {
             tMarks[i, ] <- IDAndExamNameToGrade(ID, i)
       }
-      for (i in nrow(tMarks):1) {
-            if (is.na(tMarks[i,2]) || tMarks[i,2] == 0) {
+      for (i in rev(seq_len(nrow(tMarks)))) {
+            if (is.na(tMarks[i, 2]) || tMarks[i, 2] == 0) {
                   tMarks <- tMarks[-i,]
             }
       }
       return(tMarks)
 }
-
 
 #' Get student's overall grade.  
 #' 
@@ -689,20 +688,40 @@ IDToNotes <- function(ID) {
                          bind.data = df)
 }
 
+#' Retrieve a given student's name from their ID.
+#' 
+#' Enter the student's ID.  Returns a data.frame with given names and last name.  
+#' 
+#' @param ID A string containing a student's ID number (should be a 9 digit integer).
+#' @return A data.frame with two columns.  
+#' @seealso \code{\link{readStudents}}
+#' @examples 
+#' IDToName("111111111")
+#' IDToName("222222222")
+#' IDToName("333333333")
+#' IDToName("444444444") 
+IDToName <- function(ID) {
+      df <-as.data.frame(ID)
+      dbGetPreparedQuery(conn = DBconn(), 
+                         "SELECT givenNames, lastName FROM students AS s WHERE s.ID = :ID AND s.del = 0",
+                         bind.data = df)
+}
+
 #' Show all relevant data on a student.
 #' 
 #' @param ID A student ID, the only necessary parameter.
 #' @param date A date object; if altered from default, will only return information up until that date.
 #' @param totalWeighting,cpWeighting,attendanceMethod,questionMethod See \code{\link{IDToCurrentGrade}}
-#' @return A list with outputs from AssignmentMarks(), TestMarks(), IDToNotes(), and (if testWeighting is given) IDToCurrentGrade().
+#' @return A list with outputs from IDToName(), AssignmentMarks(), TestMarks(), IDToNotes(), and (if testWeighting is given) IDToCurrentGrade().
 showStudent <- function(ID, date = Sys.Date(), totalWeighting = NULL, cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction")) {
+      Name <- IDToName(ID)
       Assignments <- AssignmentMarks(ID, date)
       Tests <- TestMarks(ID, date)
       Notes <- IDToNotes(ID)
-      result <- list(Assignments = Assignments, Tests = Tests, Notes = Notes)
+      result <- list(Name = Name, Assignments = Assignments, Tests = Tests, Notes = Notes)
       if (is.null(totalWeighting) == FALSE) {
             Current.Grade <- IDToCurrentGrade(ID, totalWeighting, date, cpWeighting, attendanceMethod, questionMethod)
-            result <- list(Assignments = Assignments, Tests = Tests, Current.Grade = Current.Grade, Notes = Notes)
+            result <- list(Name = Name, Assignments = Assignments, Tests = Tests, Current.Grade = Current.Grade, Notes = Notes)
       }
       return(result)
 }
