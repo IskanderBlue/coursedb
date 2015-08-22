@@ -191,7 +191,7 @@ UpdateStudents <- function(newStudentDataFrame, columns = c("ID", "email", "give
       
       UpdateTable(table = "students", newDF = newStudentDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]]), asCha = rep(T, length(columns)))
       rsID <- readStudents()$ID[]
-      badIDs <- sum(is.na(rsID), is.null(rsID), grepl("^$", rsID))# Is is.null appropriate?
+      badIDs <- sum(is.na(rsID) | grepl("^$", rsID))
       if (sum(badIDs) == 1) {
             print("It seems that 1 ID was not read in correctly.")
       } else if (sum(badIDs) > 1) {
