@@ -117,15 +117,15 @@ ghostRow <- function(tableName, rows, delete, conn = DBconn()) {
       dbGetPreparedQuery(conn, statement = sql, bind.data = rows)      
 }
 
-#' Determine which rows to remove.
+#' Determine which rows to remove by description.
 #' 
 #' @param table The table from which you wish to delete rows.
 #' @param description A named vector describing the rows you wish to delete.
 #' @examples 
 #' description <- c(ID = "111111111", date = as.Date("2015-05-21")) 
-#' deleteWhichRows("classParticipation", description) # Can enter 1 or 2 or "1 2" as prompted.
+#' deleteRows("classParticipation", description) # Can enter 1 or 2 or "1 2" as prompted.
 #' description <- c(ID = "333333333", date = as.Date("2015-05-22"))
-#' deleteWhichRows("classParticipation", description) # Can enter any combination of 1, 2, 3, and 4.
+#' deleteRows("classParticipation", description) # Can enter any combination of 1, 2, 3, and 4.
 
 deleteRows <- function(table, description, delete = TRUE) {
       
@@ -192,4 +192,62 @@ deleteRows <- function(table, description, delete = TRUE) {
             # Resetting default warnings.
             options(warn = storeWarn)
       }
+}
+
+#' Determine which rows to remove by formula
+#' 
+#' @param table The table from which you wish to delete rows.
+#' @param formula A formula or vector of formulas describing the rows you wish to delete.
+#' @examples 
+#' formula <- c(~ID == "222222222", ~grade < 10) 
+#' deleteFormula("assignments", formula) 
+#' formula <- c(~ID == "333333333", ~date == as.Date("2015-05-22"))
+#' deleteFormula("classParticipation", formula) # Can enter any combination of 1, 2, 3, and 4.
+
+deleteFormula <- function(table, formula, delete = TRUE) {
+      # Create enviroment within which to evaluate formula
+      df <- showTable(table)
+      env <- list2env(df)
+      # If formula is a list, go through every entry; otherwise just evaluate.
+      if (is.list(formula)) {
+            deleteVector <- rep(TRUE, nrow(df))
+            for (i in 1:length(formula)) {
+                  deleteVector <- deleteVector & eval(formula[[i]][[2]], envir = env)
+            }
+      } else {
+            deleteVector <- eval(formula[[2]], envir = env)
+      }
+      # Cutting df down to rows that fit formula.  Renaming rows for user clarity.
+      df <- df[deleteVector, ]
+      rownames(df) <- 1:nrow(df)
+      # Acquiring hidden rown numbers, cutting them to fit formula too.
+      hiddenRNsql <- paste("SELECT rowNumber from ", table, sep = "")
+      hiddenRN <- dbGetPreparedQuery(conn = DBconn(), hiddenRNsql, bind.data = df)
+      hiddenRN <- hiddenRN[deleteVector, ]
+      # Verifying with user which rows to cut.
+      cat("These are the rows returned by your formula.\n")
+      print(df)
+      if (delete == TRUE) {
+            cat("Which rows would you like to delete?\n")
+      } else {
+            cat("Which rows would you like to undelete?\n")
+      }
+      d <- readline("Enter row numbers separated by spaces or 'all'; other inputs interpreted as 'none'. \n")
+      # Suppressing warnings while testing whether 'd' is numeric.
+      storeWarn <- getOption("warn")
+      options(warn = -1)
+      if (is.na(as.integer(strsplit(d, " ")[[1]]))) {
+            if (d == 'all') {
+                  rNumbers <- hiddenRN
+                  ghostRow(table, rNumbers, delete)
+            } else {      
+                  cat("I'm assuming that's 'None of the above'. \n")
+            }
+      } else {
+            d <- as.integer(strsplit(d, " ")[[1]])
+            rNumbers <- hiddenRN[d]
+            ghostRow(table, rNumbers, delete)
+      }
+      # Resetting default warnings.
+      options(warn = storeWarn)
 }
