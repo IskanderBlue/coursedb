@@ -19,3 +19,10 @@ print.studentInfo <- function(x) {
       cat("Notes: \n")
       print(x[[last]])
 }
+
+print.testInfo <- function(x) {
+      cat("Multiple choice: \n")
+      print(x[[1]]); cat("\n")
+      cat("Long form: \n")
+      print(x[[2]]); cat("\n")
+}

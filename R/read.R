@@ -179,8 +179,8 @@ IDAndExamNameToGrade <- function(ID, examName) {
                                     AND l.del = 0",
                                bind.data = df)
       # 3     tally total mark on test
-      total <- (sum(as.integer(a$questionValue[a$questionName == ca$questionName 
-                                              && a$answer == ca$answer])) 
+      total <- (sum(as.integer(a$questionValue[a$questionName == ca$questionName & 
+                                                     a$answer == ca$answer])) 
                + sum(as.integer(g$grade)))
       outOf <- sum(as.integer(ca$questionValue)) + sum(as.integer(tg$grade))
       fraction <- total / outOf
@@ -725,5 +725,36 @@ showStudent <- function(ID, date = Sys.Date(), totalWeighting = NULL, cpWeightin
             result <- list(Name = Name, Assignments = Assignments, Tests = Tests, Current.Grade = Current.Grade, Notes = Notes)
       }
       class(result) <- c("studentInfo", class(result))
+      return(result)
+}
+
+#' Display a student's results for a given test
+#' 
+#' @param ID A character vector, the student's ID.
+#' @param examName A character vector identifying the exam.
+#' @examples 
+#' ID <- "111111111"; examName <- "1"
+#' showTest(ID, examName)
+
+showTest <- function(ID, examName) {
+      # 1         match ID to answers (mcAnswers) and grades (longformGrades)
+      df <- as.data.frame(cbind(ID, examName))
+      a <- dbGetPreparedQuery(conn = DBconn(), "SELECT answer, questionName, questionValue, examCode FROM mcAnswers AS m WHERE m.ID = :ID AND m.examName = :examName AND m.del = 0", bind.data = df)
+      if (length(unique(a$examCode)) > 1) {warning("Exam code not unique.")}      
+      g <- dbGetPreparedQuery(conn = DBconn(), "SELECT grade, questionName, examCode FROM longformGrades AS l WHERE l.ID = :ID AND l.examName = :examName AND l.del = 0", bind.data = df)
+      if (length(unique(g$examCode)) > 1) {warning("Exam code not unique.")}
+      # 2     compare answers to correct answers, grades to total grades
+      df <- as.data.frame(cbind(examName, a$examCode[1])); colnames(df) <- c("examName", "examCode")
+      ca <- dbGetPreparedQuery(conn = DBconn(), "SELECT answer, questionName, questionValue FROM mcAnswers AS m WHERE m.ID = 999999999 AND m.examName = :examName AND m.examCode = :examCode AND m.del = 0", bind.data = df)
+      tg <- dbGetPreparedQuery(conn = DBconn(), "SELECT grade, questionName FROM longformGrades AS l WHERE l.ID = 999999999 AND l.examName = :examName AND l.examCode = :examCode AND l.del = 0", bind.data = df)
+      # 3     reformat to display desired information.
+      a$answerKey <- ca$answer
+      a$correct <- FALSE
+      a$correct[a$answer == ca$answer] <- TRUE
+      a <- a[ , c(2, 3, 6, 1, 5, 4)]
+      g$maxGrade <- tg$grade
+      g <- g[ , c(2, 1, 4, 3)]
+      result <- list(mcAnswers = a, longformGrade = g)
+      class(result) <- c("testInfo", class(result))
       return(result)
 }
