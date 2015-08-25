@@ -14,7 +14,7 @@ Document what is needed.
       Make so that beginners can use, experts can customize.
             Don't make beginner enter unnecessary things.  Don't make experts do things your way.
       
-Store notes as part of package.      
+/Store notes as part of package.      
 
 Plan:
       Carry out operations with real data from old term.  If all works, great; otherwise, need changes.
@@ -209,16 +209,20 @@ Make functions work without inputs (ie. empty tables?)
 /Use class, print method
 /Call class studentInfo, print.studentInfo method
 
-showtest : per test: specify student, test
-      reformat processed 
-      mostly want to know right or wrong
-            sometimes actual answers
-how did class do overall?
-      score for every student
-      answer for every question for every student?
-read scores on each question
-      input identifies test
-            one line per student, how they did on each question on test
-            students are rows, questions are columns
-            add class to result, printmethod for class
-            mod dataframe to add student, print
+/showtest : per test: specify student, test
+/      reformat processed 
+/      mostly want to know right or wrong
+/            sometimes actual answers
+/how did class do overall?
+/      score for every student
+/      answer for every question for every student?
+/read scores on each question
+/      input identifies test
+/            one line per student, how they did on each question on test
+/            students are rows, questions are columns
+/            add class to result, printmethod for class
+/            mod dataframe to add student, print
+            
+*****
+August 24th 2015
+?  examNameToResults(), 'a' isn't capturing ID == 123456789 from sample table.  Why not??
