@@ -25,4 +25,6 @@ print.testInfo <- function(x) {
       print(x[[1]]); cat("\n")
       cat("Long form: \n")
       print(x[[2]]); cat("\n")
+      cat("Tally: \n")
+      print(x[[3]]); cat("\n")
 }
