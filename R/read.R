@@ -728,15 +728,14 @@ showStudent <- function(ID, date = Sys.Date(), totalWeighting = NULL, cpWeightin
       return(result)
 }
 
-#' Display a student's results for a given test
+#' Display a student's results for a given test.
 #' 
 #' @param ID A character vector, the student's ID.
 #' @param examName A character vector identifying the exam.
 #' @examples 
 #' ID <- "111111111"; examName <- "1"
-#' showTest(ID, examName)
-
-showTest <- function(ID, examName) {
+#' IDAndExamNameToResults(ID, examName)
+IDAndExamNameToResults <- function(ID, examName) {
       # 1         match ID to answers (mcAnswers) and grades (longformGrades)
       df <- as.data.frame(cbind(ID, examName))
       a <- dbGetPreparedQuery(conn = DBconn(), "SELECT answer, questionName, questionValue, examCode FROM mcAnswers AS m WHERE m.ID = :ID AND m.examName = :examName AND m.del = 0", bind.data = df)
@@ -754,7 +753,89 @@ showTest <- function(ID, examName) {
       a <- a[ , c(2, 3, 6, 1, 5, 4)]
       g$maxGrade <- tg$grade
       g <- g[ , c(2, 1, 4, 3)]
-      result <- list(mcAnswers = a, longformGrade = g)
+      # 4     tally total mark on test
+      total <- (sum(as.integer(a$questionValue[a$questionName == ca$questionName & 
+                                                     a$answer == ca$answer])) 
+                + sum(as.integer(g$grade)))
+      outOf <- sum(as.integer(ca$questionValue)) + sum(as.integer(tg$grade))
+      fraction <- total / outOf
+      #5 give result
+      result <- list(mcAnswers = a, longformGrade = g, tally = c(total = total, outOf = outOf, fraction = fraction))
       class(result) <- c("testInfo", class(result))
       return(result)
+}
+
+#' Display the results of a test for an entire class.
+#' @param examName A string, the name of the test (or exam).
+#' @param summary A logical variable.  If TRUE, will only display a summary of the class's data.  
+#' @examples 
+#' examNameToResults("1")
+#' examNameToResults("2", summary = FALSE)
+examNameToResults <- function(examName, summaryOnly = TRUE) {
+      # Retrieve data from tables
+      df <- data.frame(examName = as.character(examName))
+      a <- dbGetPreparedQuery(conn = DBconn(), "SELECT ID, answer, questionName, questionValue, examCode FROM mcAnswers AS m WHERE m.examName = :examName AND m.del = 0", bind.data = df)
+      g <- dbGetPreparedQuery(conn = DBconn(), "SELECT ID, grade, questionName, examCode FROM longformGrades AS l WHERE l.examName = :examName AND l.del = 0", bind.data = df)
+      # Separate answer keys/ full marks
+      ca <- a[a$ID == "999999999", ]; a <- a[a$ID != "999999999", ]
+      tg <- g[g$ID == "999999999", ]; g <- g[g$ID != "999999999", ]
+      # Tack correct answer/ full marks into each row.
+      for (i in 1:nrow(a)) { 
+            a$answerKey[i] <- ca$answer[ca$examCode == a$examCode[i] & ca$questionName == a$questionName[i]]
+      }
+      for (i in 1:nrow(g)) {
+            if (sum(tg$examCode == g$examCode[i] & tg$questionName == g$questionName[i]) == 0) {
+                  stop("In the longformGrades table, there is a row with an examCode or questionName that does not correspond to any answer key (row with ID == \"999999999\").")
+            }
+            g$maxGrade[i] <- tg$grade[tg$examCode == g$examCode[i] & tg$questionName == g$questionName[i]]
+      }
+      # Tack on question summaries
+      a$correct <- a$answer == a$answerKey
+      g$fraction <- g$grade / g$maxGrade
+      # Reorder columns
+      a <- a[ , c(1, 3, 7, 4, 2, 6, 5)]
+      g <- g[ , c(1, 3, 6, 2, 5, 4)]
+      # Tally marks 
+      ids <- unique(a$ID); total <- rep(NA, length(ids))
+      for (i in 1:length(ids)) {
+            total[i] <- (sum(as.integer(a$questionValue[a$ID == ids[i] & a$answer == a$answerKey])) + sum(as.integer(g$grade[g$ID == ids[i]])))
+      }
+      outOf <- sum(as.integer(ca$questionValue[ca$examCode == ca$examCode[1]])) + sum(as.integer(tg$grade)[tg$examCode == tg$examCode[1]])
+      fraction <- total / outOf
+      if (summaryOnly == TRUE) {
+            # Only for summaries
+            a <- data.frame(ID = a$ID, questionName = a$questionName, mc = a$correct)
+            g <- data.frame(ID = g$ID, questionName = g$questionName, lf = g$fraction) 
+            a <- reshape(a, idvar = "ID", timevar = "questionName", direction = "wide")
+            g <- reshape(g, idvar = "ID", timevar = "questionName", direction = "wide")
+            sum <- merge(a, g); sum$fraction <- fraction
+            sum.minus.ID <- sum[names(sum) != "ID"]
+            last.row <- as.data.frame(t(apply(sum.minus.ID, 2, mean))); last.row$ID <- "class"
+            sum <- rbind(sum, last.row)
+            return(sum)
+      } else {
+            # Format for printing
+            tally <- data.frame(total = total); tally$outOf <- outOf; tally$fraction <- fraction
+            last.tally <- as.data.frame(t(apply(tally, 2, mean))); last.tally$ID <- "class"
+            tally$ID <- ids; tally <- rbind(tally, last.tally); tally <- tally[ , c(4, 1, 2, 3)]
+            result <- list(mcAnswers = a, longformGrade = g, tally = tally)
+            class(result) <- c("testInfo", class(result))
+            return(result)      
+      }
+}
+
+#' Displays test results
+#' @param examName A string, the name of the test or exam to display.
+#' @param ID The name of a specific student to focus upon; if FALSE, displays slightly less detailed information for entire class.
+#' @param summary A logical variable, if TRUE, displays only a relatively brief summary.
+#' @examples 
+#' showTest("1")
+#' showTest("1", ID = "111111111")
+#' showTest("2", summary = TRUE)
+showTest <- function(examName, ID = FALSE, summaryOnly = FALSE) {
+      if (ID == FALSE) {
+            examNameToResults(examName, summaryOnly)
+      } else {
+            IDAndExamNameToResults(ID, examName)
+      }
 }
