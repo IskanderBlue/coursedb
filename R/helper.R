@@ -216,6 +216,7 @@ deleteFormula <- function(table, formula, delete = TRUE) {
             }
       } else {
             deleteVector <- eval(formula[[2]], envir = env)
+            if (sum(deleteVector) == 0) stop("No rows fit your formula.")
       }
       # Cutting df down to rows that fit formula.  Renaming rows for user clarity.
       df <- df[deleteVector, ]
