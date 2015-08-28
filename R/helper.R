@@ -28,9 +28,10 @@ checkNumeric <- function(maybeANumber) {
 #' A helper function for the all of the Updater-() functions.
 #' 
 #' Not expected to be accessed directly by users.
-#' Used by the \code{\link{data entry functions}}.
+#' Used by the data entry functions.
 #' 
 #' @family helper functions
+#' @family data entry functions
 #' @param df A data.frame to be used to update the table.
 #' @param sql1 A string, the initial sql statement to find rows matching the criteria for an existing row.
 #' @param ifsql A string, the sql statement to be used if there are no such matching rows 

@@ -5,6 +5,7 @@
 
 #' Generic function to update tables.
 #' 
+#' @family data entry functions
 #' @param table A string containing the name of the table to be updated.
 #' @param newDF A data.frame containing the info to be added to the table (or updated)
 #' @param columns A vector of strings, the names of the specific columns to be added to the table; set names(columns) to the appropriate database column names.  eg. c(ID = "student.ID", email = "student.email", ...).

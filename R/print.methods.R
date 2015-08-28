@@ -2,7 +2,7 @@
 #' 
 #' @param x A studentInfo object.
 
-print.studentInfo <- function(x) {
+print.studentInfo <- function(x, ...) {
       cat("Name: \n")
       cat(x[[1]], "\n\n")
       cat("Assignments: \n")
@@ -20,7 +20,10 @@ print.studentInfo <- function(x) {
       print(x[[last]])
 }
 
-print.testInfo <- function(x) {
+#' Method to print class testInfo objects (from the showTest() function)
+#' 
+#' @param x A testInfo object.
+print.testInfo <- function(x, ...) {
       cat("Multiple choice: \n")
       print(x[[1]]); cat("\n")
       cat("Long form: \n")
