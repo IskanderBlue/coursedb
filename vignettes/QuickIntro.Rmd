@@ -62,3 +62,40 @@ The package will also calculate a student's overall grade based on the informati
 ```{r}
 IDToCurrentGrade("111111111", c(.2, 0, .3, .5))
 ```
+To see everything the database has on a student, 
+```{r}
+showStudent("111111111")
+```
+To see how they did on a test in detail, 
+```{r}
+showTest("1", "111111111")
+```
+To see how the entire class did on that test, 
+```{r}
+showTest("1")
+```
+Note that this throws warnings.  In the sample database (table: `longformGrades`), there are entries recorded for a student (ID = `"123456789"`) who took test `"1"` with an erroneous examCode (`8XER`). (Same with test `"2"`, for that matter.) See:
+```{r}
+tail(readLFGrades(), n = 8)
+```
+To avoid those warnings, you could use `UpdateLFGrades()` to update those rows, or you could get rid of them altogether:
+```
+deleteFormula("longformGrades", ~ID == "123456789") 
+# When R asks which rows you would like to delete, enter 'all'.
+```
+```{r, echo = FALSE}
+# Since I don't know how to fake user input in RMarkdown, I'm just running the code to delete the bad rows directly.  
+table <- "longformGrades"
+formula <- ~ID == "123456789"
+df <- showTable(table)
+env <- list2env(df)
+deleteVector <- eval(formula[[2]], envir = env)      
+hiddenRNsql <- paste("SELECT rowNumber from ", table, sep = "")
+hiddenRN <- RSQLite::dbGetPreparedQuery(conn = DBconn(), hiddenRNsql, bind.data = df)
+hiddenRN <- hiddenRN[deleteVector, ]
+ghostRow(table, hiddenRN, delete = TRUE)      
+```
+In any case, if you don't want all of the information from `showTest("1")`, you can use:
+```{r}
+showTest("1", summaryOnly = TRUE)
+```
