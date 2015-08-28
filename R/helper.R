@@ -120,8 +120,9 @@ ghostRow <- function(tableName, rows, delete, conn = DBconn()) {
 
 #' Determine which rows to remove by description.
 #' 
-#' @param table The table from which you wish to delete rows.
-#' @param description A named vector describing the rows you wish to delete.
+#' @param table The table from which you wish to delete or undelete rows.
+#' @param description A named vector describing the rows you wish to delete or undelete.
+#' @param delete A flag setting whether to delete or undelete.
 #' @examples 
 #' description <- c(ID = "111111111", date = as.Date("2015-05-21")) 
 #' deleteRows("classParticipation", description) # Can enter 1 or 2 or "1 2" as prompted.
@@ -197,8 +198,9 @@ deleteRows <- function(table, description, delete = TRUE) {
 
 #' Determine which rows to remove by formula
 #' 
-#' @param table The table from which you wish to delete rows.
-#' @param formula A formula or vector of formulas describing the rows you wish to delete.
+#' @param table The table from which you wish to delete or undelete rows.
+#' @param formula A formula or vector of formulas describing the rows you wish to delete or undelete.
+#' @param delete A flag setting whether to delete or undelete.
 #' @examples 
 #' formula <- c(~ID == "222222222", ~grade < 10) 
 #' deleteFormula("assignments", formula) 

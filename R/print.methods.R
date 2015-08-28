@@ -1,6 +1,7 @@
 #' Method to print class studentInfo objects (from the showStudent() function)
 #' 
 #' @param x A studentInfo object.
+#' @param ... Further arguments passed to or from other methods.
 
 print.studentInfo <- function(x, ...) {
       cat("Name: \n")
@@ -23,6 +24,7 @@ print.studentInfo <- function(x, ...) {
 #' Method to print class testInfo objects (from the showTest() function)
 #' 
 #' @param x A testInfo object.
+#' @param ... Further arguments passed to or from other methods.
 print.testInfo <- function(x, ...) {
       cat("Multiple choice: \n")
       print(x[[1]]); cat("\n")

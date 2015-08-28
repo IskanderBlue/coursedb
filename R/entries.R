@@ -264,7 +264,7 @@ UpdateAssignments <- function(newAssignmentDataFrame, columns = c("ID", "date", 
 #' mcDF$questionValue <- rep(c(2, 2, 1), 3)
 #' UpdateMCAnswers(mcDF) # Amend the question values from c(1, 1, 1) to c(2, 2, 1).
 
-UpdateMCAnswers <- function(newMCDataFrame, columns = c("ID", "date", "answer", "questionName", "questionValue", "examName", "examCode"), asCha = c(T, F, T, T, F, T, T)) {
+UpdateMCAnswers <- function(newMCAnswersDataFrame, columns = c("ID", "date", "answer", "questionName", "questionValue", "examName", "examCode"), asCha = c(T, F, T, T, F, T, T)) {
       
       # Ensuring that columns has names.
       if (is.null(names(columns))) {
@@ -273,7 +273,7 @@ UpdateMCAnswers <- function(newMCDataFrame, columns = c("ID", "date", "answer", 
             for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
       }
       
-      UpdateTable(table = "mcAnswers", newDF = newMCDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], questionName = columns[["questionName"]], examName = columns[["examName"]]), asCha = asCha)
+      UpdateTable(table = "mcAnswers", newDF = newMCAnswersDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], questionName = columns[["questionName"]], examName = columns[["examName"]]), asCha = asCha)
 }
 
 
@@ -288,7 +288,7 @@ UpdateMCAnswers <- function(newMCDataFrame, columns = c("ID", "date", "answer", 
 #'    If a row with given values for those parameters already exists, 
 #'          UpdateLFGrades() assumes that the line should be corrected.  
 #' @family data entry functions
-#' @param newLFAnswersDataFrame A data.frame with between 3 and 6 columns.
+#' @param newLFGradesDataFrame A data.frame with between 3 and 6 columns.
 #' \describe{
 #'    \item{ID}{The students' IDs (typically 9-digit integers).  Note that 999999999, is used as the ID for correct responses.  Should be entered using as.character() (set asCha equal to TRUE for this column).}
 #'    \item{date}{\code{\link{date}} class objects.  Do not set asCha equal to TRUE for this column.}
@@ -311,7 +311,7 @@ UpdateMCAnswers <- function(newMCDataFrame, columns = c("ID", "date", "answer", 
 #' lfDF$grade <- c(8, 3, 2, 9, 4, 5, 10, 5, 5)
 #' UpdateLFGrades(lfDF) # Correct mistaken grade entries.
 
-UpdateLFGrades <- function(newLFDataFrame, columns = c("ID", "date", "grade", "questionName", "examName", "examCode"), asCha = c(T, F, F, T, T, T)) {
+UpdateLFGrades <- function(newLFGradesDataFrame, columns = c("ID", "date", "grade", "questionName", "examName", "examCode"), asCha = c(T, F, F, T, T, T)) {
       
       # Ensuring that columns has names.
       if (is.null(names(columns))) {
@@ -320,7 +320,7 @@ UpdateLFGrades <- function(newLFDataFrame, columns = c("ID", "date", "grade", "q
             for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
       }
       
-      UpdateTable(table = "longformGrades", newDF = newLFDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], questionName = columns[["questionName"]], examName = columns[["examName"]]), asCha = asCha)
+      UpdateTable(table = "longformGrades", newDF = newLFGradesDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], questionName = columns[["questionName"]], examName = columns[["examName"]]), asCha = asCha)
 }
 
 #' Update "classParticipation" table with new (or corrected) data.
@@ -348,6 +348,7 @@ UpdateLFGrades <- function(newLFDataFrame, columns = c("ID", "date", "grade", "q
 #' }
 #' @param columns A vector containing the names of the columns you wish to include.  Set names(columns) to the appropriate database column names.  eg. c(ID = "student.ID", date, attended = "there.today", ...).
 #' @param vitalColumns A vector containing the names of the columns by which UpdateClassParticipation() is to recognize whether a row is already in the database and needs updating or is new and is to be appended.  Set names(vitalColumns) to the appropriate database column names.  eg. c(ID = "student.ID", date = "DATE", questionAnswered = "qA", ...).
+#' @param asCha A logical vector specifiying which columns to deliberately enter as characters (as opposed to numerics, date objects, etc.).
 #' @seealso \code{\link{date}}
 #' @examples 
 #' cpDF <- data.frame(ID = c(993456888, 222222229, 222222229), attended = c(F, T, T), questionAnswered = c("", "Q3", ""), questionAsked = c("", "", "Why is option pricing so complicated?"), participationNotes = c("", "", "Came in late. Again."), date = rep(Sys.Date(), 3) ) 
@@ -355,7 +356,7 @@ UpdateLFGrades <- function(newLFDataFrame, columns = c("ID", "date", "grade", "q
 #' cpDF$attended <- c(T, T, T)
 #' UpdateClassParticipation(cpDF) # Amends attendance for 1st student.
 
-UpdateClassParticipation <- function(newCPDataFrame, columns = c("ID", "date", "attended", "questionAnswered", "questionAsked", "participationNotes"), vitalColmns = c("ID", "date", "questionAnswered", "questionAsked", "participationNotes"), asCha = c(T, F, F, T, T, T)) {
+UpdateClassParticipation <- function(newCPDataFrame, columns = c("ID", "date", "attended", "questionAnswered", "questionAsked", "participationNotes"), vitalColumns = c("ID", "date", "questionAnswered", "questionAsked", "participationNotes"), asCha = c(T, F, F, T, T, T)) {
       
       # Ensuring that columns and vitalColumns have names.
       if (is.null(names(columns))) {

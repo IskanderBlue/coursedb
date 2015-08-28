@@ -774,7 +774,7 @@ IDAndExamNameToResults <- function(ID, examName) {
 #' where the correct answers are given) then the calculations resulting in 
 #' class averages will omit those rows.
 #' @param examName A string, the name of the test (or exam).
-#' @param summary A logical variable.  If TRUE, will only display a summary of the class's data.  
+#' @param summaryOnly A logical variable.  If TRUE, will only display a summary of the class's data.  
 #' @examples 
 #' examNameToResults("1")
 #' examNameToResults("2", summary = FALSE)
@@ -843,7 +843,7 @@ examNameToResults <- function(examName, summaryOnly = TRUE) {
 #' Displays test results
 #' @param examName A string, the name of the test or exam to display.
 #' @param ID The name of a specific student to focus upon; if FALSE, displays slightly less detailed information for entire class.
-#' @param summary A logical variable, if TRUE, displays only a relatively brief summary.
+#' @param summaryOnly A logical variable, if TRUE, displays only a relatively brief summary.
 #' @examples 
 #' showTest("1")
 #' showTest("1", ID = "111111111")
