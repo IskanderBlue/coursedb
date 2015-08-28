@@ -139,7 +139,7 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
             df <- newDF[i, ]
             df$rowNumber <- nextRow
             # rowUpdater() returns 1 if new row was made, 0 if existing row was updated.
-            newRow <- rowUpdater(df, sql1, ifsql, elsesql, updateCounter)
+            newRow <- rowUpdater(df, sql1, ifsql, elsesql)
             nextRow <- nextRow + newRow
             updateCounter <- updateCounter + (1 - newRow)
       }

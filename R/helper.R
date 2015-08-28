@@ -39,7 +39,7 @@ checkNumeric <- function(maybeANumber) {
 #' @param elsesql A string, the sql statement to be used if no rows match; 
 #'    (tells Updater-() to update matching rows).
 
-rowUpdater <- function(df, sql1, ifsql, elsesql, nextRow, updateCounter) {
+rowUpdater <- function(df, sql1, ifsql, elsesql) {
       conn <- DBconn()
       query <- dbGetPreparedQuery(conn, sql1, bind.data = df)      
       if (nrow(query) == 0) {
@@ -72,7 +72,7 @@ DBedit <- function(table, conn = DBconn()) {
 #' Must assign output to (the parameter data.frame or a new) data.frame
 #' 
 #' @param dframe A data.frame with a column containing first and last names in a single string.
-#' @param nameColumn The name of the column containing the names.  
+#' @param namesColumn The name of the column containing the names.  
 #' @examples 
 #' df <- data.frame(names = c("James Earl Jones", "Chow Yun Fat", "Julia-Louise Dreyfus"), stringsAsFactors = FALSE)
 #' namesColumn <- "names"
