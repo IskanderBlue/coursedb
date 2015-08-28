@@ -223,6 +223,9 @@ Make functions work without inputs (ie. empty tables?)
 /            add class to result, printmethod for class
 /            mod dataframe to add student, print
             
-*****
-August 24th 2015
-?  examNameToResults(), 'a' isn't capturing ID == 123456789 from sample table.  Why not??
+******
+August 25th 2015
+/Change fail to warning in showTest()
+/Give error: student not found
+/if I can make functions recoverable -- X and Y  failed, but rest works -- leave course.db /alone; otherwise, delete malfunctioning lines.
+finish automated checking stuff
