@@ -766,6 +766,11 @@ IDAndExamNameToResults <- function(ID, examName) {
 }
 
 #' Display the results of a test for an entire class.
+#' 
+#' If either the mcAnswers table or the longformGrades table contains rows 
+#' for which an answer key does not exist (a row with ID == "999999999" 
+#' where the correct answers are given) then the calculations resulting in 
+#' class averages will omit those rows.
 #' @param examName A string, the name of the test (or exam).
 #' @param summary A logical variable.  If TRUE, will only display a summary of the class's data.  
 #' @examples 
@@ -781,13 +786,20 @@ examNameToResults <- function(examName, summaryOnly = TRUE) {
       tg <- g[g$ID == "999999999", ]; g <- g[g$ID != "999999999", ]
       # Tack correct answer/ full marks into each row.
       for (i in 1:nrow(a)) { 
-            a$answerKey[i] <- ca$answer[ca$examCode == a$examCode[i] & ca$questionName == a$questionName[i]]
+            if (length(ca$answer[ca$examCode == a$examCode[i] & ca$questionName == a$questionName[i]]) == 1) {
+                  a$answerKey[i] <- ca$answer[ca$examCode == a$examCode[i] & ca$questionName == a$questionName[i]]
+            } else {
+                  warning("In the mcAnswers table, there is a row with an examCode or questionName that does not correspond to any answer key (row with ID == \"999999999\").")
+                  a$answerKey[i] <- NA
+            }
       }
       for (i in 1:nrow(g)) {
             if (sum(tg$examCode == g$examCode[i] & tg$questionName == g$questionName[i]) == 0) {
-                  stop("In the longformGrades table, there is a row with an examCode or questionName that does not correspond to any answer key (row with ID == \"999999999\").")
+                  warning("In the longformGrades table, there is a row with an examCode or questionName that does not correspond to any answer key (row with ID == \"999999999\").")
+                  g$maxGrade[i] <- NA
+            } else {
+                  g$maxGrade[i] <- tg$grade[tg$examCode == g$examCode[i] & tg$questionName == g$questionName[i]]
             }
-            g$maxGrade[i] <- tg$grade[tg$examCode == g$examCode[i] & tg$questionName == g$questionName[i]]
       }
       # Tack on question summaries
       a$correct <- a$answer == a$answerKey
@@ -802,13 +814,15 @@ examNameToResults <- function(examName, summaryOnly = TRUE) {
       }
       outOf <- sum(as.integer(ca$questionValue[ca$examCode == ca$examCode[1]])) + sum(as.integer(tg$grade)[tg$examCode == tg$examCode[1]])
       fraction <- total / outOf
+      names(fraction) <- ids
       if (summaryOnly == TRUE) {
             # Only for summaries
-            a <- data.frame(ID = a$ID, questionName = a$questionName, mc = a$correct)
-            g <- data.frame(ID = g$ID, questionName = g$questionName, lf = g$fraction) 
+            a <- data.frame(ID = a$ID, questionName = a$questionName, mc = a$correct, stringsAsFactors = FALSE)
+            g <- data.frame(ID = g$ID, questionName = g$questionName, lf = g$fraction, stringsAsFactors = FALSE) 
             a <- reshape(a, idvar = "ID", timevar = "questionName", direction = "wide")
             g <- reshape(g, idvar = "ID", timevar = "questionName", direction = "wide")
-            sum <- merge(a, g); sum$fraction <- fraction
+            sum <- merge(a, g)
+            sum$fraction <- fraction[names(fraction) == sum$ID]
             sum.minus.ID <- sum[names(sum) != "ID"]
             last.row <- as.data.frame(t(apply(sum.minus.ID, 2, mean))); last.row$ID <- "class"
             sum <- rbind(sum, last.row)
@@ -816,7 +830,7 @@ examNameToResults <- function(examName, summaryOnly = TRUE) {
       } else {
             # Format for printing
             tally <- data.frame(total = total); tally$outOf <- outOf; tally$fraction <- fraction
-            last.tally <- as.data.frame(t(apply(tally, 2, mean))); last.tally$ID <- "class"
+            last.tally <- as.data.frame(t(apply(tally, 2, mean, na.rm = TRUE))); last.tally$ID <- "class"
             tally$ID <- ids; tally <- rbind(tally, last.tally); tally <- tally[ , c(4, 1, 2, 3)]
             result <- list(mcAnswers = a, longformGrade = g, tally = tally)
             class(result) <- c("testInfo", class(result))
