@@ -31,6 +31,7 @@ listTables <- function(conn = DBconn()) {
       dbListTables(conn)
 }
 
+# Not for users; shows internal rowNames and del columns.  
 #' @rdname basicOutputs
 trueTable <- function(table, conn = DBconn()) {
       dbGetQuery(conn, paste("SELECT * FROM", table))
