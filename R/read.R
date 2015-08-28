@@ -739,9 +739,11 @@ IDAndExamNameToResults <- function(ID, examName) {
       # 1         match ID to answers (mcAnswers) and grades (longformGrades)
       df <- as.data.frame(cbind(ID, examName))
       a <- dbGetPreparedQuery(conn = DBconn(), "SELECT answer, questionName, questionValue, examCode FROM mcAnswers AS m WHERE m.ID = :ID AND m.examName = :examName AND m.del = 0", bind.data = df)
-      if (length(unique(a$examCode)) > 1) {warning("Exam code not unique.")}      
+      if (length(unique(a$examCode)) > 1) {warning("Exam code not unique. (mcAnswers table)")}      
+      if (nrow(a) == 0) {stop("No records for this student ID found in the mcAnswers table.")}
       g <- dbGetPreparedQuery(conn = DBconn(), "SELECT grade, questionName, examCode FROM longformGrades AS l WHERE l.ID = :ID AND l.examName = :examName AND l.del = 0", bind.data = df)
-      if (length(unique(g$examCode)) > 1) {warning("Exam code not unique.")}
+      if (length(unique(g$examCode)) > 1) {warning("Exam code not unique. (longformGrades table)")}
+      if (nrow(a) == 0) {stop("No records for this student ID found in the longformGrades table.")}
       # 2     compare answers to correct answers, grades to total grades
       df <- as.data.frame(cbind(examName, a$examCode[1])); colnames(df) <- c("examName", "examCode")
       ca <- dbGetPreparedQuery(conn = DBconn(), "SELECT answer, questionName, questionValue FROM mcAnswers AS m WHERE m.ID = 999999999 AND m.examName = :examName AND m.examCode = :examCode AND m.del = 0", bind.data = df)
