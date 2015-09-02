@@ -91,7 +91,7 @@ readAllInfo <- function(conn = DBconn()) {
 
 #' Like readAssignments(), but more legiblle
 #' 
-#' @param conn A connection to a database.
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 showAssignments <- function(conn = DBconn()) {
       a <- dbGetQuery(conn, "SELECT ID, date, grade, assignmentName FROM assignments AS t WHERE t.del = 0")
       a$date <- as.Date(a$date, origin = "1970-01-01")
@@ -111,11 +111,17 @@ showAssignments <- function(conn = DBconn()) {
 #' 
 #' @param givenNames A string, a student's first name (and any middle names used).  
 #' @param lastName A string,  that student's last name.
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A dataframe containing the IDs, given names, and last names of all matches.
-#' @examples NameToID("Jarl", "Imhotep")
+#' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' NameToID("Jarl", "Imhotep", conn = DBconn(tmpcoursedb))
 
-NameToID <- function(givenNames, lastName) {
-      IDs <- dbGetQuery(conn = DBconn(), 
+NameToID <- function(givenNames, lastName, conn = DBconn()) {
+      IDs <- dbGetQuery(conn, 
                         "SELECT ID, lastName, givenNames 
                                FROM students AS t WHERE t.del = 0")
       givenMatch <- agrep(givenNames, IDs$givenNames)
@@ -134,6 +140,7 @@ NameToID <- function(givenNames, lastName) {
 #' 
 #' @param ID A student's ID number (should be a 9 digit integer).
 #' @param examName A string, the number (or name) assigned to an exam.
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A vector with 3 elements.  
 #' \enumerate{
 #'    \item The student's score.
@@ -141,11 +148,16 @@ NameToID <- function(givenNames, lastName) {
 #'    \item The student's score as a fraction of the full score.  
 #' }
 #' @seealso \code{\link{IDToAssignmentMark}}
-#' @examples IDAndExamNameToGrade(555555555, "1")
-IDAndExamNameToGrade <- function(ID, examName) {
+#' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' IDAndExamNameToGrade(555555555, "1", conn = DBconn(tmpcoursedb))
+IDAndExamNameToGrade <- function(ID, examName, conn = DBconn()) {
       # 1         match ID to answers (mcAnswers) and grades (longformGrades)
       df <- as.data.frame(cbind(ID, examName))
-      a <- dbGetPreparedQuery(conn = DBconn(),
+      a <- dbGetPreparedQuery(conn,
                               "SELECT answer, questionName, questionValue, examCode 
                                     FROM mcAnswers AS m 
                                     WHERE m.ID = :ID 
@@ -153,7 +165,7 @@ IDAndExamNameToGrade <- function(ID, examName) {
                                     AND m.del = 0",
                               bind.data = df)
       if (length(unique(a$examCode)) > 1) {warning("Exam code not unique.")}      
-      g <- dbGetPreparedQuery(conn = DBconn(),
+      g <- dbGetPreparedQuery(conn,
                               "SELECT grade, questionName, examCode 
                                     FROM longformGrades AS l 
                                     WHERE l.ID = :ID 
@@ -163,7 +175,7 @@ IDAndExamNameToGrade <- function(ID, examName) {
       if (length(unique(g$examCode)) > 1) {warning("Exam code not unique.")}
       # 2     compare answers to correct answers, grades to total grades
       df <- as.data.frame(cbind(examName, a$examCode[1])); colnames(df) <- c("examName", "examCode")
-      ca <- dbGetPreparedQuery(conn = DBconn(),
+      ca <- dbGetPreparedQuery(conn,
                                "SELECT answer, questionName, questionValue 
                                     FROM mcAnswers AS m 
                                     WHERE m.ID = 999999999 
@@ -171,7 +183,7 @@ IDAndExamNameToGrade <- function(ID, examName) {
                                     AND m.examCode = :examCode
                                     AND m.del = 0",
                                bind.data = df)
-      tg <- dbGetPreparedQuery(conn = DBconn(),
+      tg <- dbGetPreparedQuery(conn,
                                "SELECT grade, questionName 
                                     FROM longformGrades AS l 
                                     WHERE l.ID = 999999999 
@@ -197,6 +209,7 @@ IDAndExamNameToGrade <- function(ID, examName) {
 #' 
 #' @param ID A student's ID number (should be a 9 digit integer).
 #' @param assignmentName A string, the number (or name) of an assignment.
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A vector with 3 elements.  
 #' \enumerate{
 #'    \item The student's score.
@@ -205,12 +218,16 @@ IDAndExamNameToGrade <- function(ID, examName) {
 #' }
 #' @seealso \code{\link{IDAndExamNameToGrade}}
 #' @examples 
-#' IDToAssignmentMark("555555555", "2")
-IDToAssignmentMark <- function(ID, assignmentName) {
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' IDToAssignmentMark("555555555", "2", conn = DBconn(tmpcoursedb))
+IDToAssignmentMark <- function(ID, assignmentName, conn = DBconn()) {
       # 1   Match ID and assignmentName to score (from assignments table)
       #     and get full score for assignment
       df <- as.data.frame(cbind(ID, assignmentName))
-      a <- dbGetPreparedQuery(conn = DBconn(),
+      a <- dbGetPreparedQuery(conn,
                               "SELECT grade, ID FROM assignments AS a 
                                     WHERE a.ID = :ID 
                                     AND a.assignmentName = :assignmentName
@@ -242,18 +259,23 @@ IDToAssignmentMark <- function(ID, assignmentName) {
 #'                number of dates attended up until the date parameter by the 
 #'                numeric value entered, capped at 1.  
 #'    }
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A numeric value.  
 #' @seealso \code{\link{IDToClassParticipation}}
 #' @examples IDToAttendance(555555555)
-#' IDToAttendance(111111111) # 4 / 5 classes attended
-#' IDToAttendance(111111111, attendanceMethod = 4) # One day considered a freebie.  
-#' IDToAttendance(111111111, attendanceMethod = 6) # Also possible
-#' IDToAttendance(222222222) # 3 / 5 classes attended
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' IDToAttendance(111111111, conn = DBconn(tmpcoursedb)) # 4 / 5 classes attended
+#' IDToAttendance(111111111, attendanceMethod = 4, conn = DBconn(tmpcoursedb)) # One day considered a freebie.  
+#' IDToAttendance(111111111, attendanceMethod = 6, conn = DBconn(tmpcoursedb)) # Also possible
+#' IDToAttendance(222222222, conn = DBconn(tmpcoursedb)) # 3 / 5 classes attended
 
-IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate") {
+IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate", conn = DBconn()) {
       # Attendance weighting default: % of dates so far attended; otherwise x/y(specified), capped at 1.
       ID <- as.data.frame(ID)
-      c <- dbGetPreparedQuery(conn = DBconn(), 
+      c <- dbGetPreparedQuery(conn, 
                               "SELECT date, attended 
                               FROM classParticipation AS c
                               WHERE c.ID = :ID
@@ -291,6 +313,7 @@ IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate") {
 #'          \item A numeric value --  if the student has asked at least that 
 #'                number of questions, they get full marks; otherwise, none.  
 #'    }
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A vector with 2 or 3 elements.  
 #' \enumerate{
 #'    \item The number of questions the student asked.
@@ -301,19 +324,24 @@ IDToAttendance <- function(ID, date = Sys.Date(), attendanceMethod = "toDate") {
 #' @seealso \code{\link{IDToClassParticipation}}
 #' @seealso \code{\link{IDToQuestionsAnswered}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
-#' @examples IDToQuestionsAsked(111111111)
-#' IDToQuestionsAsked(222222222)
-#' IDToQuestionsAsked(333333333)
-#' IDToQuestionsAsked(333333333, evalMethod = 1) # 100% if at least 1 question answered.
-#' IDToQuestionsAsked(222222222, evalMethod = 1) # Still did not meet threshold.
+#' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' IDToQuestionsAsked(111111111, conn = DBconn(tmpcoursedb))
+#' IDToQuestionsAsked(222222222, conn = DBconn(tmpcoursedb))
+#' IDToQuestionsAsked(333333333, conn = DBconn(tmpcoursedb))
+#' IDToQuestionsAsked(333333333, evalMethod = 1, conn = DBconn(tmpcoursedb)) # 100% if at least 1 question answered.
+#' IDToQuestionsAsked(222222222, evalMethod = 1, conn = DBconn(tmpcoursedb)) # Still did not meet threshold.
 
-IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
+IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "fraction", conn = DBconn()) {
       #     Default evaluation method:
       #     Find the maximum number of questions asked.  
       #     Find the fraction of that maximum that the given ID asked. 
       #     Alternate: 100% if >= evalMethod (a number) questions were asked.
       ID <- as.data.frame(ID)
-      c <- dbGetPreparedQuery(conn = DBconn(), 
+      c <- dbGetPreparedQuery(conn, 
                               "SELECT date, questionAsked
                               FROM classParticipation AS c
                               WHERE c.ID = :ID
@@ -326,7 +354,7 @@ IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
             if (qs >= evalMethod) {qGrade[2] <- 1} 
       } else {
             if (evalMethod != "fraction") {warning("Invalid evalMethod; defaulting to 'fraction'.")}
-            allQs <- dbGetQuery(conn = DBconn(),
+            allQs <- dbGetQuery(conn,
                                 "SELECT ID, questionAsked 
                                 FROM classParticipation as c
                                 WHERE c.del = 0
@@ -359,6 +387,7 @@ IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
 #'          \item A numeric value --  if the student has answered at least that 
 #'                number of questions, they get full marks; otherwise, none.  
 #'    }
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A vector with 2 or 3 elements.  
 #' \enumerate{
 #'    \item The number of questions the student answered.
@@ -369,18 +398,23 @@ IDToQuestionsAsked <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
 #' @seealso \code{\link{IDToClassParticipation}}
 #' @seealso \code{\link{IDToQuestionsAsked}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
-#' @examples IDToQuestionsAnswered(111111111)
-#' IDToQuestionsAnswered(222222222)
-#' IDToQuestionsAnswered(333333333)
-#' IDToQuestionsAnswered(222222222, evalMethod = 3) # Answered 3 questions; full marks.
-#' IDToQuestionsAnswered(111111111, evalMethod = 3) # Did not answer 3 questions; no marks.
-IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
+#' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' IDToQuestionsAnswered(111111111, conn = DBconn(tmpcoursedb))
+#' IDToQuestionsAnswered(222222222, conn = DBconn(tmpcoursedb))
+#' IDToQuestionsAnswered(333333333, conn = DBconn(tmpcoursedb))
+#' IDToQuestionsAnswered(222222222, evalMethod = 3, conn = DBconn(tmpcoursedb)) # Answered 3 questions; full marks.
+#' IDToQuestionsAnswered(111111111, evalMethod = 3, conn = DBconn(tmpcoursedb)) # Did not answer 3 questions; no marks.
+IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "fraction", conn = DBconn()) {
       #     Default evaluation method:
       #     Find the maximum number of questions answered.  
       #     Find the fraction of that maximum that the given ID answered.
       #     Alternate: 100% if >= evalMethod (a number) questions were answered.
       ID <- as.data.frame(ID)
-      c <- dbGetPreparedQuery(conn = DBconn(), 
+      c <- dbGetPreparedQuery(conn, 
                               "SELECT date, questionAnswered
                               FROM classParticipation AS c
                               WHERE c.ID = :ID
@@ -393,7 +427,7 @@ IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "fraction"
             if (qs >= evalMethod) {qGrade[2] <- 1} 
       } else {
             if (evalMethod != "fraction") {warning("Invalid evalMethod; defaulting to 'fraction'.")}
-            allQs <- dbGetQuery(conn = DBconn(),
+            allQs <- dbGetQuery(conn,
                                 "SELECT ID, questionAnswered 
                                 FROM classParticipation as c
                                 WHERE c.del = 0
@@ -428,6 +462,7 @@ IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "fraction"
 #'                answered at least that number of questions, they get full 
 #'                marks; otherwise, none.  
 #'    }
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A vector with 2 or 3 elements.  
 #' \enumerate{
 #'    \item The number of questions the student asked and answered.
@@ -439,16 +474,21 @@ IDToQuestionsAnswered <- function(ID, date = Sys.Date(), evalMethod = "fraction"
 #' @seealso \code{\link{IDToQuestionsAsked}}
 #' @seealso \code{\link{IDToQuestionsAnswered}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
-#' @examples IDToCombinedQuestions(333333333) # Most responses --> full marks.
-#' IDToCombinedQuestions(111111111) # 3 responses while another student gave 5 --> 60%
-#' IDToCombinedQuestions(111111111, evalMethod = 3) # 3 as the threshold number --> full marks.
-IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "fraction") {
+#' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' IDToCombinedQuestions(333333333, conn = DBconn(tmpcoursedb)) # Most responses --> full marks.
+#' IDToCombinedQuestions(111111111, conn = DBconn(tmpcoursedb)) # 3 responses while another student gave 5 --> 60%
+#' IDToCombinedQuestions(111111111, evalMethod = 3, conn = DBconn(tmpcoursedb)) # 3 as the threshold number --> full marks.
+IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "fraction", conn = DBconn()) {
       #     Default evaluation method:
       #     Find the maximum number of questions asked and answered.  
       #     Find the fraction of that maximum that the given ID asked and answered.
       #     Alternate: 100% if >= evalMethod (a number) questions were asked and/ or answered.
       ID <- as.data.frame(ID)
-      c <- dbGetPreparedQuery(conn = DBconn(), 
+      c <- dbGetPreparedQuery(conn, 
                               "SELECT date, questionAnswered, questionAsked
                               FROM classParticipation AS c
                               WHERE c.ID = :ID
@@ -461,7 +501,7 @@ IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "fraction"
             if (qs >= evalMethod) {qGrade[2] <- 1} 
       } else {
             if (evalMethod != "fraction") {warning("Invalid evalMethod; defaulting to 'fraction'.")}
-            allQs <- dbGetQuery(conn = DBconn(),
+            allQs <- dbGetQuery(conn,
                                 "SELECT ID, questionAnswered, questionAsked
                                 FROM classParticipation as c
                                 WHERE c.del = 0
@@ -504,21 +544,26 @@ IDToCombinedQuestions <- function(ID, date = Sys.Date(), evalMethod = "fraction"
 #'    \item Either a string, "fraction", or a numeric value.  See the Arguments 
 #'          in \code{\link{IDToQuestionsAsked}}, for an explanation.  
 #'    }
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A numeric value, the fraction of a full grade the student receives.  
-
 #' @seealso \code{\link{IDToAttendance}}
 #' @seealso \code{\link{IDToQuestionsAsked}}
 #' @seealso \code{\link{IDToQuestionsAnswered}}
 #' @seealso \code{\link{IDToCombinedQuestions}}
-#' @examples IDToClassParticipation(111111111)
-#' IDToClassParticipation(111111111, questionMethod = c("ask", "fraction")) # Count questions asked instead of answered.
-#' IDToClassParticipation(222222222)
-#' IDToClassParticipation(222222222, cpWeighting = c(1, 4)) # Put 80% weight on questions answered.
-#' IDToClassParticipation(222222222, cpWeighting = c(0, 1)) # Ignore attendance (only count questions).
-#' IDToClassParticipation(222222222, cpWeighting = c(0, 1), questionMethod = c("both", "fraction")) # Ignore attendance, count questions asked and answered.
-#' IDToClassParticipation(222222222, cpWeighting = c(0, 1), questionMethod = c("both", 3)) # Same as previous, but use a threshold of 3 responses.
-#' IDToClassParticipation(333333333, questionMethod = c("both", "fraction")) # Full attendance, the most questions asked/answered.
-IDToClassParticipation <- function(ID, date = Sys.Date(), cpWeighting = c(0.5,0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction")) {
+#' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' IDToClassParticipation(111111111, conn = DBconn(tmpcoursedb))
+#' IDToClassParticipation(111111111, questionMethod = c("ask", "fraction"), conn = DBconn(tmpcoursedb)) # Count questions asked instead of answered.
+#' IDToClassParticipation(222222222, conn = DBconn(tmpcoursedb))
+#' IDToClassParticipation(222222222, cpWeighting = c(1, 4), conn = DBconn(tmpcoursedb)) # Put 80% weight on questions answered.
+#' IDToClassParticipation(222222222, cpWeighting = c(0, 1), conn = DBconn(tmpcoursedb)) # Ignore attendance (only count questions).
+#' IDToClassParticipation(222222222, cpWeighting = c(0, 1), questionMethod = c("both", "fraction"), conn = DBconn(tmpcoursedb)) # Ignore attendance, count questions asked and answered.
+#' IDToClassParticipation(222222222, cpWeighting = c(0, 1), questionMethod = c("both", 3), conn = DBconn(tmpcoursedb)) # Same as previous, but use a threshold of 3 responses.
+#' IDToClassParticipation(333333333, questionMethod = c("both", "fraction"), conn = DBconn(tmpcoursedb)) # Full attendance, the most questions asked/answered.
+IDToClassParticipation <- function(ID, date = Sys.Date(), cpWeighting = c(0.5,0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction"), conn = DBconn()) {
       # Weighting default: .5 attendance, .5 questions
       if (is.numeric(cpWeighting) != TRUE) {
             warning("IDToClassParticipation requires 'cpWeighting' to be a vector of two numbers; defaulting to c(0.5, 0.5).")
@@ -527,11 +572,11 @@ IDToClassParticipation <- function(ID, date = Sys.Date(), cpWeighting = c(0.5,0.
       # Normalizing cpWeighting
       cpW <- cpWeighting/sum(cpWeighting)
 
-      a <- IDToAttendance(ID, date, attendanceMethod)
+      a <- IDToAttendance(ID, date, attendanceMethod, conn)
       if (questionMethod[1] == "ask") {
-            q <- IDToQuestionsAsked(ID, date, questionMethod[2])
+            q <- IDToQuestionsAsked(ID, date, questionMethod[2], conn)
       } else if (questionMethod[1] == "both") {
-            q <- IDToCombinedQuestions(ID, date, questionMethod[2])
+            q <- IDToCombinedQuestions(ID, date, questionMethod[2], conn)
       } else {
             if (questionMethod[1] != "answer") {
                   warning("questionMethod[1] is invalid; defaulting to 'answer'.")
@@ -550,18 +595,25 @@ IDToClassParticipation <- function(ID, date = Sys.Date(), cpWeighting = c(0.5,0.
 #' 
 #' @param ID A student's ID number (should be a 9 digit integer).
 #' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A matrix with 3 columns:  
 #' \enumerate{
 #'    \item The student's marks on assignments.
 #'    \item The full potential marks.
 #'    \item The student's marks as fractions of the full marks.  
 #' }
+#' @seealso Uses \code{\link{readAssignments}}
 #' @seealso \code{\link{IDToAssignmentMark}}
 #' @seealso \code{\link{TestMarks}}
 #' @examples 
-#' AssignmentMarks("111111111")
-AssignmentMarks <- function(ID, date = Sys.Date()) {
-      a <- readAssignments()
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' AssignmentMarks("111111111", conn = DBconn(tmpcoursedb)) # Check student 111111111's assignment marks.
+
+AssignmentMarks <- function(ID, date = Sys.Date(), conn = DBconn()) {
+      a <- readAssignments(conn)
       uniqueA <- unique(a$assignmentName[a$date <= date])
       aMarks <- matrix(ncol = 3, nrow = length(uniqueA))
       colnames(aMarks) = c("mark", "outOf", "fraction")
@@ -580,6 +632,7 @@ AssignmentMarks <- function(ID, date = Sys.Date()) {
 #' 
 #' @param ID A student's ID number (should be a 9 digit integer).
 #' @param date A \code{\link{date}} class object.  @seealso \code{\link{date}}
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A matrix with 3 columns:  
 #' \enumerate{
 #'    \item The student's marks on tests.
@@ -589,10 +642,14 @@ AssignmentMarks <- function(ID, date = Sys.Date()) {
 #' @seealso \code{\link{IDAndExamNameToGrade}}
 #' @seealso \code{\link{AssignmentMarks}}
 #' @examples 
-#' TestMarks("111111111")
-TestMarks <- function(ID, date = Sys.Date()) {
-      allMC <- readMCAnswers()
-      allLF <- readLFGrades()
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#'
+#' TestMarks("111111111", conn = DBconn(tmpcoursedb))
+TestMarks <- function(ID, date = Sys.Date(), conn = DBconn()) {
+      allMC <- readMCAnswers(conn)
+      allLF <- readLFGrades(conn)
       uniqueT <- unique(c(unique(allMC$examName[allMC$date <= date])), unique(allLF$examName[allLF$date <= date]))
       tMarks <- matrix(ncol = 3, nrow = length(uniqueT))
       colnames(tMarks) = c("mark", "outOf", "fraction")
@@ -638,13 +695,19 @@ TestMarks <- function(ID, date = Sys.Date()) {
 #'    \item Either a string, "fraction", or a numeric value.  See the Arguments 
 #'          in \code{\link{IDToQuestionsAsked}}, for an explanation.  
 #'    }
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A numeric value, the fraction of a full grade the student receives.  
 #' @seealso \code{\link{IDToClassParticipation}}
 #' @seealso \code{\link{AssignmentMarks}}
 #' @seealso \code{\link{TestMarks}}
-#' @examples IDToCurrentGrade(111111111, c(2, 0, 3, 5)) # 20% assignments, 30% other tests, 50% final exam
-#' IDToCurrentGrade(111111111, c(2, 1, 3, 4), cpWeighting = c(0,1)) # 20% assignments, 10% class participation (ignoring attendance) 30% other tests, 40% final exam
-IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction")) {
+#' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' IDToCurrentGrade(111111111, c(2, 0, 3, 5), conn = DBconn(tmpcoursedb)) # 20% assignments, 30% other tests, 50% final exam
+#' IDToCurrentGrade(111111111, c(2, 1, 3, 4), cpWeighting = c(0,1), conn = DBconn(tmpcoursedb)) # 20% assignments, 10% class participation (ignoring attendance) 30% other tests, 40% final exam
+IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction"), conn = DBconn()) {
       # 1   Determine weighting (eg. assignments = .2, exams = .5)
       #                                   eg.   20% Assignments
       #                                          0% Participation
@@ -654,13 +717,13 @@ IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting 
       
       # 2   Fetch all the grades -- assignments, tests, participation, etc.
       # 2.1 Fetch assignments
-      a <- AssignmentMarks(ID, date)
+      a <- AssignmentMarks(ID, date, conn)
       
       # 2.2 Fetch tests
-      t <- TestMarks(ID, date)
+      t <- TestMarks(ID, date, conn)
       
       # 2.3 Fetch class participation
-      c <- IDToClassParticipation(ID, date, cpWeighting, attendanceMethod, questionMethod)
+      c <- IDToClassParticipation(ID, date, cpWeighting, attendanceMethod, questionMethod, conn)
       
       # 3   Weight grades according to weighting function.
       aw <- sum(a[,1])/sum(a[,2]) * tW[1]
@@ -676,15 +739,21 @@ IDToCurrentGrade <- function(ID, totalWeighting, date = Sys.Date(), cpWeighting 
 #' Enter the student's ID.  Returns a data.frame with any notes entered.  
 #' 
 #' @param ID A string containing a student's ID number (should be a 9 digit integer).
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A data.frame with a single column.  
 #' @seealso \code{\link{readStudents}}
-#' @examples IDToNotes("111111111")
-#' IDToNotes("222222222")
-#' IDToNotes("333333333")
-#' IDToNotes("444444444") # No notes. 
-IDToNotes <- function(ID) {
+#' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' IDToNotes("111111111", conn = DBconn(tmpcoursedb))
+#' IDToNotes("222222222", conn = DBconn(tmpcoursedb))
+#' IDToNotes("333333333", conn = DBconn(tmpcoursedb))
+#' IDToNotes("444444444", conn = DBconn(tmpcoursedb)) # No notes. 
+IDToNotes <- function(ID, conn = DBconn()) {
       df <- as.data.frame(ID)     
-      dbGetPreparedQuery(conn = DBconn(), 
+      dbGetPreparedQuery(conn, 
                          "SELECT notes FROM students AS s WHERE s.ID = :ID AND s.del = 0", 
                          bind.data = df)
 }
@@ -694,16 +763,21 @@ IDToNotes <- function(ID) {
 #' Enter the student's ID.  Returns a data.frame with given names and last name.  
 #' 
 #' @param ID A string containing a student's ID number (should be a 9 digit integer).
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A data.frame with two columns.  
 #' @seealso \code{\link{readStudents}}
 #' @examples 
-#' IDToName("111111111")
-#' IDToName("222222222")
-#' IDToName("333333333")
-#' IDToName("444444444") 
-IDToName <- function(ID) {
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' IDToName("111111111", conn = DBconn(tmpcoursedb))
+#' IDToName("222222222", conn = DBconn(tmpcoursedb))
+#' IDToName("333333333", conn = DBconn(tmpcoursedb))
+#' IDToName("444444444", conn = DBconn(tmpcoursedb)) 
+IDToName <- function(ID, conn = DBconn()) {
       df <-as.data.frame(ID)
-      dbGetPreparedQuery(conn = DBconn(), 
+      dbGetPreparedQuery(conn, 
                          "SELECT givenNames, lastName FROM students AS s WHERE s.ID = :ID AND s.del = 0",
                          bind.data = df)
 }
@@ -713,16 +787,23 @@ IDToName <- function(ID) {
 #' @param ID A student ID, the only necessary parameter.
 #' @param date A date object; if altered from default, will only return information up until that date.
 #' @param totalWeighting,cpWeighting,attendanceMethod,questionMethod See \code{\link{IDToCurrentGrade}}
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @return A list with outputs from IDToName(), AssignmentMarks(), TestMarks(), IDToNotes(), and (if testWeighting is given) IDToCurrentGrade().
-showStudent <- function(ID, date = Sys.Date(), totalWeighting = NULL, cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction")) {
-      Name <- IDToName(ID)
+#' @examples
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' showStudent("111111111", conn = DBconn(tmpcoursedb))
+showStudent <- function(ID, date = Sys.Date(), totalWeighting = NULL, cpWeighting = c(0.5, 0.5), attendanceMethod = "toDate", questionMethod = c("answer", "fraction"), conn = DBconn()) {
+      Name <- IDToName(ID, conn)
       Name <- paste(Name[1], Name[2])
-      Assignments <- AssignmentMarks(ID, date)
-      Tests <- TestMarks(ID, date)
-      Notes <- IDToNotes(ID)
+      Assignments <- AssignmentMarks(ID, date, conn)
+      Tests <- TestMarks(ID, date, conn)
+      Notes <- IDToNotes(ID, conn)
       result <- list(Name = Name, Assignments = Assignments, Tests = Tests, Notes = Notes)
       if (is.null(totalWeighting) == FALSE) {
-            Current.Grade <- IDToCurrentGrade(ID, totalWeighting, date, cpWeighting, attendanceMethod, questionMethod)
+            Current.Grade <- IDToCurrentGrade(ID, totalWeighting, date, cpWeighting, attendanceMethod, questionMethod, conn)
             result <- list(Name = Name, Assignments = Assignments, Tests = Tests, Current.Grade = Current.Grade, Notes = Notes)
       }
       class(result) <- c("studentInfo", class(result))
@@ -733,22 +814,27 @@ showStudent <- function(ID, date = Sys.Date(), totalWeighting = NULL, cpWeightin
 #' 
 #' @param ID A character vector, the student's ID.
 #' @param examName A character vector identifying the exam.
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
 #' ID <- "111111111"; examName <- "1"
-#' IDAndExamNameToResults(ID, examName)
-IDAndExamNameToResults <- function(ID, examName) {
+#' IDAndExamNameToResults(ID, examName, conn = DBconn(tmpcoursedb))
+IDAndExamNameToResults <- function(ID, examName, conn = DBconn()) {
       # 1         match ID to answers (mcAnswers) and grades (longformGrades)
       df <- as.data.frame(cbind(ID, examName))
-      a <- dbGetPreparedQuery(conn = DBconn(), "SELECT answer, questionName, questionValue, examCode FROM mcAnswers AS m WHERE m.ID = :ID AND m.examName = :examName AND m.del = 0", bind.data = df)
+      a <- dbGetPreparedQuery(conn, "SELECT answer, questionName, questionValue, examCode FROM mcAnswers AS m WHERE m.ID = :ID AND m.examName = :examName AND m.del = 0", bind.data = df)
       if (length(unique(a$examCode)) > 1) {warning("Exam code not unique. (mcAnswers table)")}      
       if (nrow(a) == 0) {stop("No records for this student ID found in the mcAnswers table.")}
-      g <- dbGetPreparedQuery(conn = DBconn(), "SELECT grade, questionName, examCode FROM longformGrades AS l WHERE l.ID = :ID AND l.examName = :examName AND l.del = 0", bind.data = df)
+      g <- dbGetPreparedQuery(conn, "SELECT grade, questionName, examCode FROM longformGrades AS l WHERE l.ID = :ID AND l.examName = :examName AND l.del = 0", bind.data = df)
       if (length(unique(g$examCode)) > 1) {warning("Exam code not unique. (longformGrades table)")}
       if (nrow(a) == 0) {stop("No records for this student ID found in the longformGrades table.")}
       # 2     compare answers to correct answers, grades to total grades
       df <- as.data.frame(cbind(examName, a$examCode[1])); colnames(df) <- c("examName", "examCode")
-      ca <- dbGetPreparedQuery(conn = DBconn(), "SELECT answer, questionName, questionValue FROM mcAnswers AS m WHERE m.ID = 999999999 AND m.examName = :examName AND m.examCode = :examCode AND m.del = 0", bind.data = df)
-      tg <- dbGetPreparedQuery(conn = DBconn(), "SELECT grade, questionName FROM longformGrades AS l WHERE l.ID = 999999999 AND l.examName = :examName AND l.examCode = :examCode AND l.del = 0", bind.data = df)
+      ca <- dbGetPreparedQuery(conn, "SELECT answer, questionName, questionValue FROM mcAnswers AS m WHERE m.ID = 999999999 AND m.examName = :examName AND m.examCode = :examCode AND m.del = 0", bind.data = df)
+      tg <- dbGetPreparedQuery(conn, "SELECT grade, questionName FROM longformGrades AS l WHERE l.ID = 999999999 AND l.examName = :examName AND l.examCode = :examCode AND l.del = 0", bind.data = df)
       # 3     reformat to display desired information.
       a$answerKey <- ca$answer
       a$correct <- FALSE
@@ -776,14 +862,19 @@ IDAndExamNameToResults <- function(ID, examName) {
 #' class averages will omit those rows.
 #' @param examName A string, the name of the test (or exam).
 #' @param summaryOnly A logical variable.  If TRUE, will only display a summary of the class's data.  
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @examples 
-#' examNameToResults("1")
-#' examNameToResults("2", summary = FALSE)
-examNameToResults <- function(examName, summaryOnly = TRUE) {
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#'
+#' examNameToResults("1", conn = DBconn(tmpcoursedb))
+#' examNameToResults("2", summary = FALSE, conn = DBconn(tmpcoursedb))
+examNameToResults <- function(examName, summaryOnly = TRUE, conn = DBconn()) {
       # Retrieve data from tables
       df <- data.frame(examName = as.character(examName))
-      a <- dbGetPreparedQuery(conn = DBconn(), "SELECT ID, answer, questionName, questionValue, examCode FROM mcAnswers AS m WHERE m.examName = :examName AND m.del = 0", bind.data = df)
-      g <- dbGetPreparedQuery(conn = DBconn(), "SELECT ID, grade, questionName, examCode FROM longformGrades AS l WHERE l.examName = :examName AND l.del = 0", bind.data = df)
+      a <- dbGetPreparedQuery(conn, "SELECT ID, answer, questionName, questionValue, examCode FROM mcAnswers AS m WHERE m.examName = :examName AND m.del = 0", bind.data = df)
+      g <- dbGetPreparedQuery(conn, "SELECT ID, grade, questionName, examCode FROM longformGrades AS l WHERE l.examName = :examName AND l.del = 0", bind.data = df)
       # Separate answer keys/ full marks
       ca <- a[a$ID == "999999999", ]; a <- a[a$ID != "999999999", ]
       tg <- g[g$ID == "999999999", ]; g <- g[g$ID != "999999999", ]
@@ -845,14 +936,19 @@ examNameToResults <- function(examName, summaryOnly = TRUE) {
 #' @param examName A string, the name of the test or exam to display.
 #' @param ID The name of a specific student to focus upon; if FALSE, displays slightly less detailed information for entire class.
 #' @param summaryOnly A logical variable, if TRUE, displays only a relatively brief summary.
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @examples 
-#' showTest("1")
-#' showTest("1", ID = "111111111")
-#' showTest("2", summary = TRUE)
-showTest <- function(examName, ID = FALSE, summaryOnly = FALSE) {
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#'
+#' showTest("1", conn = DBconn(tmpcoursedb))
+#' showTest("1", ID = "111111111", conn = DBconn(tmpcoursedb))
+#' showTest("2", summary = TRUE, conn = DBconn(tmpcoursedb))
+showTest <- function(examName, ID = FALSE, summaryOnly = FALSE, conn = DBconn()) {
       if (ID == FALSE) {
-            examNameToResults(examName, summaryOnly)
+            examNameToResults(examName, summaryOnly, conn)
       } else {
-            IDAndExamNameToResults(ID, examName)
+            IDAndExamNameToResults(ID, examName, conn)
       }
 }

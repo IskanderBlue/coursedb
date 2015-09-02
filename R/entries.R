@@ -11,36 +11,41 @@
 #' @param columns A vector of strings, the names of the specific columns to be added to the table; set names(columns) to the appropriate database column names.  eg. c(ID = "student.ID", email = "student.email", ...).
 #' @param vitalColumns A vector of strings, the names of the columns by which UpdateTables() is to recognize whether a row is already in the database and needs updating or is new and is to be appended.  Set names(vitalColumns) to the appropriate database column names.  eg. c(ID = "student.ID").
 #' @param asCha A logical vector, TRUE where the columns should be entered as characters rather than numerics.  Keeps R from deciding that IDs or names made only of digits are actually numeric values.
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
 #' table <- "students"
 #' sDF <- data.frame(ID = c("asd", 222222229, 122222229), email = c(NA, "222semail@@address.com", "abcd@@email.com"), lastName = c("Abelard", "Semekovic", "Kovacs"), givenNames = c("Eugene", "Juliana", "Takeshi"), program = c("statistics", "financial modelling", ""), notes = c("", "", "Terrifying.") ) 
 #' columns <- c("ID", "email", "givenNames", "lastName")
 #' vitalColumns <- c("ID")
-#' asCha <- c(T, T, T, T)
-#' UpdateTable(table, sDF, columns, vitalColumns, asCha) # Adds three lines to the students table.
+#' asCha <- c(TRUE, TRUE, TRUE, TRUE)
+#' UpdateTable(table, sDF, columns, vitalColumns, asCha, conn = DBconn(tmpcoursedb)) # Adds three lines to the students table.
 #' sDF <- data.frame(ID = c("asd", 222222229, 122222229), email = c(NA, "amended.email@@address.com", "abcd@@email.com"), lastName = c("Abelard", "Semekovic", "Kovacs"), givenNames = c("Eugene", "Juliana", "Takeshi"), program = c("statistics", "financial modelling", ""), notes = c("", "Amended line.", "Terrifying.") ) 
 #' columns <- c("ID", "email", "givenNames", "lastName", "notes")
-#' UpdateTable(table, sDF, columns, vitalColumns, asCha) # Amends student 222222229's entry.
+#' UpdateTable(table, sDF, columns, vitalColumns, asCha, conn = DBconn(tmpcoursedb)) # Amends student 222222229's entry.
 
 
 #' table <- "assignments"
 #' aDF <- data.frame(ID = c(993456888, 222222229, 222222229), assignmentName = c("1", "1", "three"), grade = c(4, 5.5, 10), date = rep(Sys.Date(), 3) ) 
 #' columns <- c("ID", "date", "grade", "assignmentName")
 #' vitalColumns <- c("ID", "assignmentName")
-#' asCha <- c(T, F, F, T)
-#' UpdateTable(table, aDF, columns, vitalColumns, asCha) # Creates 3 new rows in 'assignments' table.
+#' asCha <- c(TRUE, FALSE, FALSE, TRUE)
+#' UpdateTable(table, aDF, columns, vitalColumns, asCha, conn = DBconn(tmpcoursedb)) # Creates 3 new rows in 'assignments' table.
 #' aDF <- data.frame(ID = c(993456888, 222222229, 222222229), assignmentName = c("1", "1", "three"), grade = c(4, 5.5, 9), date = rep(Sys.Date(), 3) ) 
-#' UpdateTable(table, aDF, columns, vitalColumns, asCha) # Reduces grade in last entry from 10 to 9.
+#' UpdateTable(table, aDF, columns, vitalColumns, asCha, conn = DBconn(tmpcoursedb)) # Reduces grade in last entry from 10 to 9.
 
 
 #' table <- "mcAnswers"
-#' mcDF <- data.frame(ID = rep(c(567567567, 678678678, 999999999), each = 3), date = rep(Sys.Date(), length(ID)), answer = c(1, 1, 1, 2, 3, 4, 3, 2, 3), questionName = rep(1:3, 3), questionValue = rep(1, length(answer)), examName = rep("exm1.1(makeup)", length(answer)), examCode = rep("101", length(answer)))
+#' mcDF <- data.frame(ID = rep(c(567567567, 678678678, 999999999), each = 3), date = rep(Sys.Date(), 9), answer = c(1, 1, 1, 2, 3, 4, 3, 2, 3), questionName = rep(1:3, 3), questionValue = rep(1, 9), examName = rep("exm1.1(makeup)", 9), examCode = rep("101", 9))
 #' columns <- c("ID", "date", "answer", "questionName", "questionValue", "examName", "examCode")
 #' vitalColumns <- c("ID", "questionName", "examName")
-#' asCha <- c(T, F, T, T, F, T, T)
-#' UpdateTable(table, mcDF, columns, vitalColumns, asCha) # Enter answers to 3 MC questions for two students as well as the correct answers.
+#' asCha <- c(TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE)
+#' UpdateTable(table, mcDF, columns, vitalColumns, asCha, conn = DBconn(tmpcoursedb)) # Enter answers to 3 MC questions for two students as well as the correct answers.
 #' mcDF$questionValue <- rep(c(2, 2, 1), 3)
-#' UpdateTable(table, mcDF, columns, vitalColumns, asCha) # Amend the question values from c(1, 1, 1) to c(2, 2, 1).
+#' UpdateTable(table, mcDF, columns, vitalColumns, asCha, conn = DBconn(tmpcoursedb)) # Amend the question values from c(1, 1, 1) to c(2, 2, 1).
 
 #' table <- "longformGrades"
 #' ID = rep(c(567567567, 678678678, 999999999), each = 3)
@@ -52,21 +57,21 @@
 #' lfDF <- data.frame(ID, date, grade, questionName, examName, examCode)
 #' columns <- c("ID", "date", "grade", "questionName", "examName", "examCode")
 #' vitalColumns <- c("ID", "questionName", "examName")
-#' asCha <- c(T, F, F, T, T, T)
-#' UpdateTable(table, lfDF, columns, vitalColumns, asCha) # Enter grades to 3 questions for two students as well as the maximum grades.
+#' asCha <- c(TRUE, FALSE, FALSE, TRUE, TRUE, TRUE)
+#' UpdateTable(table, lfDF, columns, vitalColumns, asCha, conn = DBconn(tmpcoursedb)) # Enter grades to 3 questions for two students as well as the maximum grades.
 #' lfDF$grade <- c(8, 3, 2, 9, 4, 5, 10, 5, 5)
-#' UpdateTable(table, lfDF, columns, vitalColumns, asCha) # Correct mistaken grade entries.
+#' UpdateTable(table, lfDF, columns, vitalColumns, asCha, conn = DBconn(tmpcoursedb)) # Correct mistaken grade entries.
 
 #' table <- "classParticipation"
-#' cpDF <- data.frame(ID = c(993456889, 222222229, 222222229), date = rep(Sys.Date(), 3), attended = c(F, T, T), questionAnswered = c("", "Q3", ""), questionAsked = c("", "", "Why is option pricing so complicated?"), participationNotes = c("", "", "Came in late. Again.") ) 
+#' cpDF <- data.frame(ID = c(993456889, 222222229, 222222229), date = rep(Sys.Date(), 3), attended = c(FALSE, TRUE, TRUE), questionAnswered = c("", "Q3", ""), questionAsked = c("", "", "Why is option pricing so complicated?"), participationNotes = c("", "", "Came in late. Again.") ) 
 #' columns <- c("ID", "date", "attended", "questionAnswered", "questionAsked", "participationNotes")
 #' vitalColumns <- c("ID", "date", "questionAnswered", "questionAsked", "participationNotes")
-#' asCha <- c(T, F, F, T, T, T)
-#' UpdateTable(table, cpDF, columns, vitalColumns, asCha) # Enters three new participation records.
-#' cpDF$attended <- c(T, T, T)
-#' UpdateTable(table, cpDF, columns, vitalColumns, asCha) # Amends attendance for 1st student.
+#' asCha <- c(TRUE, FALSE, FALSE, TRUE, TRUE, TRUE)
+#' UpdateTable(table, cpDF, columns, vitalColumns, asCha, conn = DBconn(tmpcoursedb)) # Enters three new participation records.
+#' cpDF$attended <- c(TRUE, TRUE, TRUE)
+#' UpdateTable(table, cpDF, columns, vitalColumns, asCha, conn = DBconn(tmpcoursedb)) # Amends attendance for 1st student.
 
-UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, length(columns))) {
+UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, length(columns)), conn = DBconn()) {
       
       # Cutting 'newDF' data.frame down to only those columns listed in 'columns'
       newDF <- newDF[columns]
@@ -126,7 +131,7 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
       
       # Determining row number for next new row in table.
       maxsql <- paste("SELECT MAX(rowNumber) FROM ", table, sep = "")
-      nextRow <- dbGetQuery(conn = DBconn(), maxsql)[[1]]
+      nextRow <- dbGetQuery(conn = conn, maxsql)[[1]]
       if (is.na(nextRow)) (nextRow <- 0)
       nextRow <- nextRow + 1
       
@@ -139,7 +144,7 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
             df <- newDF[i, ]
             df$rowNumber <- nextRow
             # rowUpdater() returns 1 if new row was made, 0 if existing row was updated.
-            newRow <- rowUpdater(df, sql1, ifsql, elsesql)
+            newRow <- rowUpdater(df, sql1, ifsql, elsesql, conn)
             nextRow <- nextRow + newRow
             updateCounter <- updateCounter + (1 - newRow)
       }
@@ -175,14 +180,18 @@ UpdateTable <- function(table, newDF, columns, vitalColumns, asCha = rep(TRUE, l
 #'    \item{notes}{Strings, any notes you would like to include.}
 #' }
 #' @param columns A vector containing the names of the columns you wish to include.  Set names(columns) to the appropriate database column names.  eg. c(ID = "student.ID", email = "student.email", ...).
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @examples
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
 #' sDF <- data.frame(ID = c("", 222222229, 122222229), email = c(NA, "222semail@@address.com", "abcd@@email.com"), lastName = c("Abelard", "Semekovic", "Kovacs"), givenNames = c("Eugene", "Juliana", "Takeshi"), program = c("statistics", "financial modelling", ""), notes = c("", "", "Terrifying.") ) 
-#' UpdateStudents(sDF) # Adds three lines to the students table.
+#' UpdateStudents(sDF, conn = DBconn(tmpcoursedb)) # Adds three lines to the students table.
 #' sDF$email <- c(NA, "amended.email@@address.com", "abcd@@email.com") 
 #' sDF$notes <- c("", "Amended line.", "Terrifying.") 
-#' UpdateStudents(sDF) # Amends student 222222229's entry.
+#' UpdateStudents(sDF, conn = DBconn(tmpcoursedb)) # Amends student 222222229's entry.
 
-UpdateStudents <- function(newStudentDataFrame, columns = c("ID", "email", "givenNames", "lastName", "program", "notes")) {
+UpdateStudents <- function(newStudentDataFrame, columns = c("ID", "email", "givenNames", "lastName", "program", "notes"), conn = DBconn()) {
       # Ensuring that columns has names.
       if (is.null(names(columns))) {
             names(columns) <- columns
@@ -190,7 +199,7 @@ UpdateStudents <- function(newStudentDataFrame, columns = c("ID", "email", "give
             for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
       }
       
-      UpdateTable(table = "students", newDF = newStudentDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]]), asCha = rep(T, length(columns)))
+      UpdateTable(table = "students", newDF = newStudentDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]]), asCha = rep(TRUE, length(columns)), conn = conn)
       rsID <- readStudents()$ID[]
       badIDs <- sum(is.na(rsID) | grepl("^$", rsID))
       if (sum(badIDs) == 1) {
@@ -216,14 +225,18 @@ UpdateStudents <- function(newStudentDataFrame, columns = c("ID", "email", "give
 #' }
 #' @param columns A vector containing the names of the columns you wish to include. Set names(columns) to the appropriate database column names.  eg. c(ID = "student.ID", date = "date.of.assignment", ...).
 #' @param asCha A logical vector specifiying which columns to deliberately enter as characters (as opposed to numerics, date objects, etc.).
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @seealso \code{\link{date}}
 #' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
 #' aDF <- data.frame(ID = c(993456888, 222222229, 222222229), assignmentName = c("1", "1", "three"), grade = c(4, 5.5, 10), date = rep(Sys.Date(), 3) ) 
-#' UpdateAssignments(aDF) # Creates 3 new rows in 'assignments' table.
+#' UpdateAssignments(aDF, conn = DBconn(tmpcoursedb)) # Creates 3 new rows in 'assignments' table.
 #' aDF$grade <- c(4, 5.5, 9)
-#' UpdateAssignments(aDF) # Reduces grade in last entry from 10 to 9.
+#' UpdateAssignments(aDF, conn = DBconn(tmpcoursedb)) # Reduces grade in last entry from 10 to 9.
 
-UpdateAssignments <- function(newAssignmentDataFrame, columns = c("ID", "date", "grade", "assignmentName"), asCha = c(T, F, F, T)) {
+UpdateAssignments <- function(newAssignmentDataFrame, columns = c("ID", "date", "grade", "assignmentName"), asCha = c(TRUE, FALSE, FALSE, TRUE), conn = DBconn()) {
       
       # Ensuring that columns has names.
       if (is.null(names(columns))) {
@@ -232,7 +245,7 @@ UpdateAssignments <- function(newAssignmentDataFrame, columns = c("ID", "date", 
             for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
       }
       
-      UpdateTable(table = "assignments", newDF = newAssignmentDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], assignmentName = columns[["assignmentName"]]), asCha = asCha)
+      UpdateTable(table = "assignments", newDF = newAssignmentDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], assignmentName = columns[["assignmentName"]]), asCha = asCha, conn = conn)
 }
 
 
@@ -258,13 +271,17 @@ UpdateAssignments <- function(newAssignmentDataFrame, columns = c("ID", "date", 
 #' }
 #' @param columns A vector containing the names of the columns you wish to include.  Set names(columns) to the appropriate database column names.  eg. c(ID = "student.ID", date = "date.of.test", ...).
 #' @param asCha A logical vector specifiying which columns to deliberately enter as characters (as opposed to numerics, date objects, etc.).
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @examples 
-#' mcDF <- data.frame(ID = rep(c(567567567, 678678678, 999999999), each = 3), date = rep(Sys.Date(), length(ID)), answer = c(1, 1, 1, 2, 3, 4, 3, 2, 3), questionName = rep(1:3, 3), questionValue = rep(1, length(answer)), examName = rep("exm1.1(makeup)", length(answer)), examCode = rep("101", length(answer)))
-#' UpdateMCAnswers(mcDF) # Enter answers to 3 MC questions for two students as well as the correct answers.
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' mcDF <- data.frame(ID = rep(c(567567567, 678678678, 999999999), each = 3), date = rep(Sys.Date(), 9), answer = c(1, 1, 1, 2, 3, 4, 3, 2, 3), questionName = rep(1:3, 3), questionValue = rep(1, 9), examName = rep("exm1.1(makeup)", 9), examCode = rep("101", 9))
+#' UpdateMCAnswers(mcDF, conn = DBconn(tmpcoursedb)) # Enter answers to 3 MC questions for two students as well as the correct answers.
 #' mcDF$questionValue <- rep(c(2, 2, 1), 3)
-#' UpdateMCAnswers(mcDF) # Amend the question values from c(1, 1, 1) to c(2, 2, 1).
+#' UpdateMCAnswers(mcDF, conn = DBconn(tmpcoursedb)) # Amend the question values from c(1, 1, 1) to c(2, 2, 1).
 
-UpdateMCAnswers <- function(newMCAnswersDataFrame, columns = c("ID", "date", "answer", "questionName", "questionValue", "examName", "examCode"), asCha = c(T, F, T, T, F, T, T)) {
+UpdateMCAnswers <- function(newMCAnswersDataFrame, columns = c("ID", "date", "answer", "questionName", "questionValue", "examName", "examCode"), asCha = c(TRUE, FALSE, TRUE, TRUE, FALSE, TRUE, TRUE), conn = DBconn()) {
       
       # Ensuring that columns has names.
       if (is.null(names(columns))) {
@@ -273,7 +290,7 @@ UpdateMCAnswers <- function(newMCAnswersDataFrame, columns = c("ID", "date", "an
             for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
       }
       
-      UpdateTable(table = "mcAnswers", newDF = newMCAnswersDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], questionName = columns[["questionName"]], examName = columns[["examName"]]), asCha = asCha)
+      UpdateTable(table = "mcAnswers", newDF = newMCAnswersDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], questionName = columns[["questionName"]], examName = columns[["examName"]]), asCha = asCha, conn = conn)
 }
 
 
@@ -299,7 +316,11 @@ UpdateMCAnswers <- function(newMCAnswersDataFrame, columns = c("ID", "date", "an
 #' }
 #' @param columns A vector containing the names of the columns you wish to include.  Set names(columns) to the appropriate database column names.  eg. c(ID = "student.ID", date = "date.of.test", ...).
 #' @param asCha A logical vector specifiying which columns to deliberately enter as characters (as opposed to numerics, date objects, etc.).
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
 #' ID = rep(c(567567567, 678678678, 999999999), each = 3)
 #' date = rep(Sys.Date(), length(ID))
 #' grade = c(8, 5, 2, 9, 4, 4, 10, 5, 5)
@@ -307,11 +328,11 @@ UpdateMCAnswers <- function(newMCAnswersDataFrame, columns = c("ID", "date", "an
 #' examName = rep("exm1.1(makeup)", length(grade))
 #' examCode = rep("101", length(grade))
 #' lfDF <- data.frame(ID, date, grade, questionName, examName, examCode)
-#' UpdateLFGrades(lfDF) # Enter grades to 3 questions for two students as well as the maximum grades.
+#' UpdateLFGrades(lfDF, conn = DBconn(tmpcoursedb)) # Enter grades to 3 questions for two students as well as the maximum grades.
 #' lfDF$grade <- c(8, 3, 2, 9, 4, 5, 10, 5, 5)
-#' UpdateLFGrades(lfDF) # Correct mistaken grade entries.
+#' UpdateLFGrades(lfDF, conn = DBconn(tmpcoursedb)) # Correct mistaken grade entries.
 
-UpdateLFGrades <- function(newLFGradesDataFrame, columns = c("ID", "date", "grade", "questionName", "examName", "examCode"), asCha = c(T, F, F, T, T, T)) {
+UpdateLFGrades <- function(newLFGradesDataFrame, columns = c("ID", "date", "grade", "questionName", "examName", "examCode"), asCha = c(TRUE, FALSE, FALSE, TRUE, TRUE, TRUE), conn = DBconn()) {
       
       # Ensuring that columns has names.
       if (is.null(names(columns))) {
@@ -320,7 +341,7 @@ UpdateLFGrades <- function(newLFGradesDataFrame, columns = c("ID", "date", "grad
             for (i in 1:length(columns)) (if (names(columns)[i] == "") (names(columns)[i] <- columns[i]))
       }
       
-      UpdateTable(table = "longformGrades", newDF = newLFGradesDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], questionName = columns[["questionName"]], examName = columns[["examName"]]), asCha = asCha)
+      UpdateTable(table = "longformGrades", newDF = newLFGradesDataFrame, columns = columns, vitalColumns = c(ID = columns[["ID"]], questionName = columns[["questionName"]], examName = columns[["examName"]]), asCha = asCha, conn = conn)
 }
 
 #' Update "classParticipation" table with new (or corrected) data.
@@ -349,14 +370,18 @@ UpdateLFGrades <- function(newLFGradesDataFrame, columns = c("ID", "date", "grad
 #' @param columns A vector containing the names of the columns you wish to include.  Set names(columns) to the appropriate database column names.  eg. c(ID = "student.ID", date, attended = "there.today", ...).
 #' @param vitalColumns A vector containing the names of the columns by which UpdateClassParticipation() is to recognize whether a row is already in the database and needs updating or is new and is to be appended.  Set names(vitalColumns) to the appropriate database column names.  eg. c(ID = "student.ID", date = "DATE", questionAnswered = "qA", ...).
 #' @param asCha A logical vector specifiying which columns to deliberately enter as characters (as opposed to numerics, date objects, etc.).
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @seealso \code{\link{date}}
 #' @examples 
-#' cpDF <- data.frame(ID = c(993456888, 222222229, 222222229), attended = c(F, T, T), questionAnswered = c("", "Q3", ""), questionAsked = c("", "", "Why is option pricing so complicated?"), participationNotes = c("", "", "Came in late. Again."), date = rep(Sys.Date(), 3) ) 
-#' UpdateClassParticipation(cpDF) # Enters three new participation records.
-#' cpDF$attended <- c(T, T, T)
-#' UpdateClassParticipation(cpDF) # Amends attendance for 1st student.
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' cpDF <- data.frame(ID = c(993456888, 222222229, 222222229), attended = c(FALSE, TRUE, TRUE), questionAnswered = c("", "Q3", ""), questionAsked = c("", "", "Why is option pricing so complicated?"), participationNotes = c("", "", "Came in late. Again."), date = rep(Sys.Date(), 3) ) 
+#' UpdateClassParticipation(cpDF, conn = DBconn(tmpcoursedb)) # Enters three new participation records.
+#' cpDF$attended <- c(TRUE, TRUE, TRUE)
+#' UpdateClassParticipation(cpDF, conn = DBconn(tmpcoursedb)) # Amends attendance for 1st student.
 
-UpdateClassParticipation <- function(newCPDataFrame, columns = c("ID", "date", "attended", "questionAnswered", "questionAsked", "participationNotes"), vitalColumns = c("ID", "date", "questionAnswered", "questionAsked", "participationNotes"), asCha = c(T, F, F, T, T, T)) {
+UpdateClassParticipation <- function(newCPDataFrame, columns = c("ID", "date", "attended", "questionAnswered", "questionAsked", "participationNotes"), vitalColumns = c("ID", "date", "questionAnswered", "questionAsked", "participationNotes"), asCha = c(TRUE, FALSE, FALSE, TRUE, TRUE, TRUE), conn = DBconn()) {
       
       # Ensuring that columns and vitalColumns have names.
       if (is.null(names(columns))) {
@@ -370,5 +395,5 @@ UpdateClassParticipation <- function(newCPDataFrame, columns = c("ID", "date", "
             for (i in 1:length(vitalColumns)) (if (names(vitalColumns)[i] == "") (names(vitalColumns)[i] <- vitalColumns[i]))
       }
       
-      UpdateTable(table = "classParticipation", newDF = newCPDataFrame, columns = columns, vitalColumns = vitalColumns, asCha = asCha)
+      UpdateTable(table = "classParticipation", newDF = newCPDataFrame, columns = columns, vitalColumns = vitalColumns, asCha = asCha, conn = conn)
 }

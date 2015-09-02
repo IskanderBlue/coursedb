@@ -8,7 +8,9 @@
 #' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' 
 #' @examples
-#' createDB()
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
 #' 
 #' @return createDB does not return a value.
 

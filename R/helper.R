@@ -38,9 +38,9 @@ checkNumeric <- function(maybeANumber) {
 #'    (tells Updater-() to add new rows to table).
 #' @param elsesql A string, the sql statement to be used if no rows match; 
 #'    (tells Updater-() to update matching rows).
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 
-rowUpdater <- function(df, sql1, ifsql, elsesql) {
-      conn <- DBconn()
+rowUpdater <- function(df, sql1, ifsql, elsesql, conn = DBconn()) {
       query <- dbGetPreparedQuery(conn, sql1, bind.data = df)      
       if (nrow(query) == 0) {
             newRow <- 1
@@ -104,9 +104,13 @@ nameSplitter <- function(dframe, namesColumn) {
 #' @param tableName A string, the name of the table to edit.
 #' @param rows A vector of rows to remove.
 #' @param delete A flag setting whether to delete or undelete.
-#' @param conn A connection to an SQL database.
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @examples
-#' ghostRow("students", 2)
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
+#' ghostRow("students", 2, delete = TRUE, conn = DBconn(tmpcoursedb))
 
 ghostRow <- function(tableName, rows, delete, conn = DBconn()) {
       rows <- data.frame(rows = rows)
@@ -123,13 +127,18 @@ ghostRow <- function(tableName, rows, delete, conn = DBconn()) {
 #' @param table The table from which you wish to delete or undelete rows.
 #' @param description A named vector describing the rows you wish to delete or undelete.
 #' @param delete A flag setting whether to delete or undelete.
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
 #' description <- c(ID = "111111111", date = as.Date("2015-05-21")) 
-#' deleteRows("classParticipation", description) # Can enter 1 or 2 or "1 2" as prompted.
+#' deleteRows("classParticipation", description, conn = DBconn(tmpcoursedb)) # Can enter 1 or 2 or "1 2" as prompted.
 #' description <- c(ID = "333333333", date = as.Date("2015-05-22"))
-#' deleteRows("classParticipation", description) # Can enter any combination of 1, 2, 3, and 4.
+#' deleteRows("classParticipation", description, conn = DBconn(tmpcoursedb)) # Can enter any combination of 1, 2, 3, and 4.
 
-deleteRows <- function(table, description, delete = TRUE) {
+deleteRows <- function(table, description, delete = TRUE, conn = DBconn()) {
       
       # Cobbling together SQL to find which rows match user's description.
       # Putting user information into usersql, 
@@ -163,7 +172,6 @@ deleteRows <- function(table, description, delete = TRUE) {
       # Creating df
       df <- data.frame(t(description))
       # Finding rows described.
-      conn = DBconn()
       userSees <- dbGetPreparedQuery(conn, usersql, bind.data = df)
       
       # If none found, return.
@@ -183,13 +191,15 @@ deleteRows <- function(table, description, delete = TRUE) {
             # Suppressing warnings while testing whether 'd' is numeric.
             storeWarn <- getOption("warn")
             options(warn = -1)
-            if (is.na(as.integer(strsplit(d, " ")[[1]]))) {
+            if (d == "") {
+                  print("I'm assuming that's 'None of the above'. ")
+            } else if (is.na(as.integer(strsplit(d, " ")[[1]]))) {
                   print("I'm assuming that's 'None of the above'. ")
             } else {
                   d <- as.integer(strsplit(d, " ")[[1]])
                   hiddenRN <- dbGetPreparedQuery(conn, hiddenRNsql, bind.data = df)
                   rNumbers <- hiddenRN[d, ]
-                  ghostRow(table, rNumbers, delete)
+                  ghostRow(table, rNumbers, delete, conn)
             }
             # Resetting default warnings.
             options(warn = storeWarn)
@@ -201,13 +211,18 @@ deleteRows <- function(table, description, delete = TRUE) {
 #' @param table The table from which you wish to delete or undelete rows.
 #' @param formula A formula or vector of formulas describing the rows you wish to delete or undelete.
 #' @param delete A flag setting whether to delete or undelete.
+#' @param conn An SQL connection to a database file.  @seealso \code{\link{DBconn}}
 #' @examples 
+#' td <- tempdir() # Create temporary directory for sample database.
+#' tmpcoursedb <- paste(td, "course.db", sep = "\\") # Record location of sample database.
+#' if (!file.exists(tmpcoursedb)) createDB(sample = TRUE, conn = DBconn(tmpcoursedb)) # Create sample database.
+#' 
 #' formula <- c(~ID == "222222222", ~grade < 10) 
-#' deleteFormula("assignments", formula) 
+#' deleteFormula("assignments", formula, conn = DBconn(tmpcoursedb)) 
 #' formula <- c(~ID == "333333333", ~date == as.Date("2015-05-22"))
-#' deleteFormula("classParticipation", formula) # Can enter any combination of 1, 2, 3, and 4.
+#' deleteFormula("classParticipation", formula, conn = DBconn(tmpcoursedb)) # Can enter any combination of 1, 2, 3, and 4.
 
-deleteFormula <- function(table, formula, delete = TRUE) {
+deleteFormula <- function(table, formula, delete = TRUE, conn = DBconn()) {
       # Create enviroment within which to evaluate formula
       df <- showTable(table)
       env <- list2env(df)
@@ -226,7 +241,7 @@ deleteFormula <- function(table, formula, delete = TRUE) {
       rownames(df) <- 1:nrow(df)
       # Acquiring hidden rown numbers, cutting them to fit formula too.
       hiddenRNsql <- paste("SELECT rowNumber from ", table, sep = "")
-      hiddenRN <- dbGetPreparedQuery(conn = DBconn(), hiddenRNsql, bind.data = df)
+      hiddenRN <- dbGetPreparedQuery(conn, hiddenRNsql, bind.data = df)
       hiddenRN <- hiddenRN[deleteVector, ]
       # Verifying with user which rows to cut.
       cat("These are the rows returned by your formula.\n")
@@ -237,20 +252,23 @@ deleteFormula <- function(table, formula, delete = TRUE) {
             cat("Which rows would you like to undelete?\n")
       }
       d <- readline("Enter row numbers separated by spaces or 'all'; other inputs interpreted as 'none'. \n")
+
       # Suppressing warnings while testing whether 'd' is numeric.
       storeWarn <- getOption("warn")
       options(warn = -1)
-      if (is.na(as.integer(strsplit(d, " ")[[1]]))) {
-            if (d == 'all') {
+      if (d == "") {
+            cat("I'm assuming that's 'None of the above'. \n")
+      } else if (is.na(as.integer(strsplit(d, " ")[[1]]))) {
+            if (length(d) > 0 & d == 'all') {
                   rNumbers <- hiddenRN
-                  ghostRow(table, rNumbers, delete)
+                  ghostRow(table, rNumbers, delete, conn)
             } else {      
                   cat("I'm assuming that's 'None of the above'. \n")
             }
       } else {
             d <- as.integer(strsplit(d, " ")[[1]])
             rNumbers <- hiddenRN[d]
-            ghostRow(table, rNumbers, delete)
+            ghostRow(table, rNumbers, delete, conn)
       }
       # Resetting default warnings.
       options(warn = storeWarn)
