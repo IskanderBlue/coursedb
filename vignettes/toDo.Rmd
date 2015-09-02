@@ -232,25 +232,25 @@ finish automated checking stuff
 
 *****
 September 1st 2015
-Automated checking problem:
-      !Examples use sample database?
-      If users have no existing, create one.
-            Put this into example code.  
+/Automated checking problem:
+/      !Examples use sample database?
+/      If users have no existing, create one.
+/            Put this into example code.  
             In dbCONN() fails, connect to existing .db created with package.  
             Put .db in inst directory?  Copy to temp file, use that?
             Connection to non-existing database --> creates database --> problem.
-      Distribute a tiny database for examples
-            Function -> copy to temp file, use sample database.  Put in inst directory.
-            set up sample database, on exit close it.
-            Maybe copy into a temp file, use that so we can do writes to it.
-            Close at end of example so user can use their own file again.
-      Getting very messy.
+/      Distribute a tiny database for examples
+/            Function -> copy to temp file, use sample database.  Put in inst directory.
+/            set up sample database, on exit close it.
+/            Maybe copy into a temp file, use that so we can do writes to it.
+/            Close at end of example so user can use their own file again.
+/      Getting very messy.
       
-tempdir() gives a writable directory
-tempfile() makes up a unique filename within directory.
-To always call database course.db, copy to tempdir()
-To give a new name every time, copy though tempfile()
-Guaranteed to be writable.  Normally, R will delete it at the end of the session, but R can crash, they can sit around.
+/tempdir() gives a writable directory
+/tempfile() makes up a unique filename within directory.
+/To always call database course.db, copy to tempdir()
+/To give a new name every time, copy though tempfile()
+/Guaranteed to be writable.  Normally, R will delete it at the end of the session, but R can /crash, they can sit around.
 RSQLite may close connections automatically when it garbage connects the collection object.
 Reassign new connection to the conn variable in dbCONN, old will be closed eventually.  Can force it to happen sooner.  Bad idea to have .db's in an unknown, indeterminate state.  
 Figure out how to close them.  There is a dbDisconnect() function; call it on the connection.  
